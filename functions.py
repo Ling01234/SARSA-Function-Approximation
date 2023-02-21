@@ -38,8 +38,9 @@ class SARSA:
             state (int): current state in the game
             episode (int): current episode in the run
         """
-        # if episode % 11 == 0:
-        #     pass  # SELECT GREEDILY - TO IMPLEMENT
+        if episode != 0 and episode % 11 == 0:
+            action = int(self.learned_policy[state])
+            return action
 
         action_values = self.Qvalues[state, :]
         preferences = action_values/self.temp
@@ -70,9 +71,14 @@ class SARSA:
 
             averaged_reward = 0
             counter = 0
-            # while loop until terminal
             terminal = False
-            while not terminal:
+            # move at most 100 times in a single episode
+            # avoid to be stuck in infinite loop
+            # if game can't terminate in 100 moves -> reward 0
+            for _ in range(100):
+                if terminal:
+                    break
+
                 (next_state, reward, terminal, _, _) = self.env.step(action)
                 averaged_reward += reward
 
@@ -105,7 +111,7 @@ class SARSA:
 
     def final_policy(self):
         """
-        Obtain the final policy based on the episodes.
+        Obtain the best policy based on the episodes played.
         """
         for i in range(self.state_num):
             self.learned_policy[i] = np.random.choice(np.where(
