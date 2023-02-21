@@ -128,7 +128,7 @@ class SARSA:
         """
         for _ in range(num_games):
             env = gym.make("FrozenLake-v1", desc=None,
-                           map_name="4x4", is_slippery=False, render_mode="human")
+                           map_name="4x4", is_slippery=True, render_mode="human")
             (state, prob) = env.reset()
             env.render()
             time.sleep(1)
@@ -145,7 +145,19 @@ class SARSA:
         env.close()
 
     def last_training(self):
-        return self.reward[-11:-1]
+        """
+        Obtain the last 10 training episode rewards
+
+        Returns:
+            np array: reward of last 10 training episodes
+        """
+        return sum(self.reward[-11:-1])/10
 
     def last_test(self):
+        """
+        Obtain the last testing episode reward
+
+        Returns:
+            int: last testing episode reward
+        """
         return self.reward[-1]
