@@ -52,6 +52,12 @@ class SARSA:
     def simulate_episodes(self, verbose=False):
         """
         This function simulates episodes in the frozen lake environment
+
+        Args:
+            verbose (bool, optional): set to True for some print statements. Defaults to False.
+
+        Returns:
+            np array: an array that contains the reward for each episode
         """
         total_reward = []
         for episode in tqdm(range(self.num_episodes)):
@@ -67,9 +73,9 @@ class SARSA:
             # while loop until terminal
             terminal = False
             while not terminal:
-                # print("Type of action: ", type(action))
                 (next_state, reward, terminal, _, _) = self.env.step(action)
                 averaged_reward += reward
+
                 # next action
                 next_action = self.select_action(next_state, episode)
 
@@ -90,6 +96,7 @@ class SARSA:
 
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
+
             averaged_reward /= counter
             total_reward.append(averaged_reward)
 
@@ -106,6 +113,13 @@ class SARSA:
 
 
 def visualize(learned_policy, num_games):
+    """
+    Visualize the game being played on pygame
+
+    Args:
+        learned_policy (np array): current best policy
+        num_games (int): number of games to be played
+    """
     for game in range(num_games):
         env = gym.make("FrozenLake-v1", desc=None,
                        map_name="4x4", is_slippery=False, render_mode="human")
