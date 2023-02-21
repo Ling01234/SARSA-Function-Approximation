@@ -118,6 +118,8 @@ class SARSA:
                 self.Qvalues[i] == np.max(self.Qvalues[i]))[0])  # may have more than 1 max
 
 
+# TO DO
+# PUT FUNCTION INSIDE CLASS
 def visualize(learned_policy, num_games):
     """
     Visualize the game being played on pygame
