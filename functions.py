@@ -85,16 +85,18 @@ class SARSA:
                 # next action
                 next_action = self.select_action(next_state, episode)
 
-                if not terminal:
-                    loss = reward + self.gamma * \
-                        self.Qvalues[next_state, next_action] - \
-                        self.Qvalues[state, action]
-                    self.Qvalues[state, action] = self.Qvalues[state,
-                                                               action] + self.alpha * loss
-                else:  # terminal state
-                    loss = reward - self.Qvalues[state, action]
-                    self.Qvalues[state, action] = self.Qvalues[state,
-                                                               action] + self.alpha * loss
+                if episode % 11 != 0: #does not update Qvalues on testing episode
+                    if not terminal:
+                        loss = reward + self.gamma * \
+                            self.Qvalues[next_state, next_action] - \
+                            self.Qvalues[state, action]
+                        self.Qvalues[state, action] = self.Qvalues[state,
+                                                                action] + self.alpha * loss
+                    else:  # terminal state
+                        loss = reward - self.Qvalues[state, action]
+                        self.Qvalues[state, action] = self.Qvalues[state,
+                                                                action] + self.alpha * loss
+
 
                 state = next_state
                 action = next_action
