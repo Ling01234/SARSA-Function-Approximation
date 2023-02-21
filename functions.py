@@ -29,7 +29,7 @@ class SARSA:
         # action value matrix
         self.Qvalues = np.zeros((self.state_num, self.action_num))
 
-    def select_action(self, state):  # NEED TO IMPLEMENT
+    def select_action(self, state, episode):  # NEED TO IMPLEMENT
         """
         This function selects an action given a state in the game.
         The exploration is done using softmax (Boltmann).
@@ -53,22 +53,25 @@ class SARSA:
         """
         This function simulates episodes in the frozen lake environment
         """
+        total_reward = []
         for episode in tqdm(range(self.num_episodes)):
             # reset env
             (state, prob) = self.env.reset()
-            action = self.select_action(state)
+            action = self.select_action(state, episode)
 
             if verbose:
                 print(f"Simulating episode {episode}.")
 
+            averaged_reward = 0
+            counter = 0
             # while loop until terminal
             terminal = False
             while not terminal:
                 # print("Type of action: ", type(action))
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-
+                averaged_reward += reward
                 # next action
-                next_action = self.select_action(next_state)
+                next_action = self.select_action(next_state, episode)
 
                 if not terminal:
                     loss = reward + self.gamma * \
@@ -83,11 +86,15 @@ class SARSA:
 
                 state = next_state
                 action = next_action
+                counter += 1
 
-                if episode % 10 == 0:  # update policy for each segment
-                    self.final_policy()
+            if episode % 10 == 0:  # update policy for each segment
+                self.final_policy()
+            averaged_reward /= counter
+            total_reward.append(averaged_reward)
 
         self.final_policy()
+        return total_reward
 
     def final_policy(self):
         """
@@ -104,7 +111,7 @@ def visualize(learned_policy, num_games):
                        map_name="4x4", is_slippery=False, render_mode="human")
         (state, prob) = env.reset()
         env.render()
-        time.sleep(2)
+        time.sleep(1)
 
         terminal = False
         while not terminal:
@@ -114,5 +121,5 @@ def visualize(learned_policy, num_games):
                 time.sleep(1)
             else:  # reached terminal state
                 break
-        time.sleep(1)
+        time.sleep(0.5)
     env.close()
