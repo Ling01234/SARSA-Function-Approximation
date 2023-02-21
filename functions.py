@@ -85,18 +85,17 @@ class SARSA:
                 # next action
                 next_action = self.select_action(next_state, episode)
 
-                if episode % 11 != 0: #does not update Qvalues on testing episode
+                if episode % 11 != 0:  # does not update Qvalues on testing episode
                     if not terminal:
                         loss = reward + self.gamma * \
                             self.Qvalues[next_state, next_action] - \
                             self.Qvalues[state, action]
                         self.Qvalues[state, action] = self.Qvalues[state,
-                                                                action] + self.alpha * loss
+                                                                   action] + self.alpha * loss
                     else:  # terminal state
                         loss = reward - self.Qvalues[state, action]
                         self.Qvalues[state, action] = self.Qvalues[state,
-                                                                action] + self.alpha * loss
-
+                                                                   action] + self.alpha * loss
 
                 state = next_state
                 action = next_action
@@ -119,31 +118,28 @@ class SARSA:
             self.learned_policy[i] = np.random.choice(np.where(
                 self.Qvalues[i] == np.max(self.Qvalues[i]))[0])  # may have more than 1 max
 
+    def visualize(self, num_games):
+        """
+        Visualize the game being played on pygame
 
-# TO DO
-# PUT FUNCTION INSIDE CLASS
-def visualize(learned_policy, num_games):
-    """
-    Visualize the game being played on pygame
+        Args:
+            learned_policy (np array): current best policy
+            num_games (int): number of games to be played
+        """
+        for _ in range(num_games):
+            env = gym.make("FrozenLake-v1", desc=None,
+                           map_name="4x4", is_slippery=False, render_mode="human")
+            (state, prob) = env.reset()
+            env.render()
+            time.sleep(1)
 
-    Args:
-        learned_policy (np array): current best policy
-        num_games (int): number of games to be played
-    """
-    for game in range(num_games):
-        env = gym.make("FrozenLake-v1", desc=None,
-                       map_name="4x4", is_slippery=False, render_mode="human")
-        (state, prob) = env.reset()
-        env.render()
-        time.sleep(1)
-
-        terminal = False
-        while not terminal:
-            if not terminal:
-                (state, reward, terminal, _, _) = env.step(
-                    int(learned_policy[state]))
-                time.sleep(1)
-            else:  # reached terminal state
-                break
-        time.sleep(0.5)
-    env.close()
+            terminal = False
+            while not terminal:
+                if not terminal:
+                    (state, reward, terminal, _, _) = env.step(
+                        int(self.learned_policy[state]))
+                    time.sleep(1)
+                else:  # reached terminal state
+                    break
+            time.sleep(0.5)
+        env.close()
