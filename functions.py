@@ -28,6 +28,7 @@ class SARSA:
         self.learned_policy = np.zeros(self.state_num)  # learned policy
         # action value matrix
         self.Qvalues = np.zeros((self.state_num, self.action_num))
+        self.reward = []
 
     def select_action(self, state, episode):  # NEED TO IMPLEMENT
         """
@@ -105,10 +106,9 @@ class SARSA:
                 self.final_policy()
 
             averaged_reward /= counter
-            total_reward.append(averaged_reward)
+            self.reward.append(averaged_reward)
 
         self.final_policy()
-        return total_reward
 
     def final_policy(self):
         """
@@ -143,3 +143,9 @@ class SARSA:
                     break
             time.sleep(0.5)
         env.close()
+
+    def last_training(self):
+        return self.reward[-11:-1]
+
+    def last_test(self):
+        return self.reward[-1]
