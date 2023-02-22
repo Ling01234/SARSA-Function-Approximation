@@ -30,7 +30,7 @@ class SARSA:
         self.Qvalues = np.zeros((self.state_num, self.action_num))
         self.reward = []
 
-    def select_action(self, state, episode):  # NEED TO IMPLEMENT
+    def select_action(self, state, episode):
         """
         This function selects an action given a state in the game.
         The exploration is done using softmax (Boltmann).
@@ -71,7 +71,6 @@ class SARSA:
                 print(f"Simulating episode {episode}.")
 
             averaged_reward = 0
-            counter = 0
             terminal = False
             # move at most 100 times in a single episode
             # avoid to be stuck in infinite loop
@@ -100,12 +99,10 @@ class SARSA:
 
                 state = next_state
                 action = next_action
-                counter += 1
 
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
 
-            # averaged_reward /= counter
             self.reward.append(averaged_reward)
 
         self.final_policy()
@@ -123,24 +120,22 @@ class SARSA:
         Visualize the game being played on pygame
 
         Args:
-            learned_policy (np array): current best policy
             num_games (int): number of games to be played
         """
         for _ in range(num_games):
             env = gym.make("FrozenLake-v1", desc=None,
-                           map_name="4x4", is_slippery=True, render_mode="human")
+                           map_name="4x4", is_slippery=False, render_mode="human")
             (state, prob) = env.reset()
             env.render()
             time.sleep(1)
 
             terminal = False
-            while not terminal:
-                if not terminal:
-                    (state, reward, terminal, _, _) = env.step(
-                        int(self.learned_policy[state]))
-                    time.sleep(1)
-                else:  # reached terminal state
-                    break
+        for i in range(100):
+            if not terminal:
+                (state, reward, terminal,_,_) = env.step(int(self.learned_policy[state]))
+                time.sleep(1)
+            else:
+                break
             time.sleep(0.5)
         env.close()
 
