@@ -61,6 +61,7 @@ class SARSA:
         Returns:
             np array: an array that contains the reward for each episode
         """
+        total_reward = []
         for episode in tqdm(range(self.num_episodes)):
             # reset env
             (state, prob) = self.env.reset()
@@ -69,7 +70,8 @@ class SARSA:
             if verbose:
                 print(f"Simulating episode {episode}.")
 
-            total_reward = 0
+            averaged_reward = 0
+            counter = 0
             terminal = False
             # move at most 100 times in a single episode
             # avoid to be stuck in infinite loop
@@ -79,8 +81,7 @@ class SARSA:
                     break
 
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-                if episode >= self.num_episodes - 11:
-                    total_reward += reward
+                averaged_reward += reward
 
                 # next action
                 next_action = self.select_action(next_state, episode)
@@ -99,12 +100,13 @@ class SARSA:
 
                 state = next_state
                 action = next_action
+                counter += 1
 
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
 
-            if episode >= self.num_episodes - 11:
-                self.reward.append(total_reward)
+            averaged_reward /= counter
+            self.reward.append(averaged_reward)
 
         self.final_policy()
 
@@ -126,7 +128,7 @@ class SARSA:
         """
         for _ in range(num_games):
             env = gym.make("FrozenLake-v1", desc=None,
-                           map_name="4x4", is_slippery=False, render_mode="human")
+                           map_name="4x4", is_slippery=True, render_mode="human")
             (state, prob) = env.reset()
             env.render()
             time.sleep(1)
@@ -142,16 +144,16 @@ class SARSA:
             time.sleep(0.5)
         env.close()
 
-    def train_reward(self):
+    def last_training(self):
         """
         Obtain the last 10 training episode rewards
 
         Returns:
             np array: reward of last 10 training episodes
         """
-        return sum(self.reward[:-1])/10
+        return sum(self.reward[-11:-1])/10
 
-    def test_reward(self):
+    def last_test(self):
         """
         Obtain the last testing episode reward
 
