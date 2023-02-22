@@ -105,7 +105,7 @@ class SARSA:
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
 
-            averaged_reward /= counter
+            # averaged_reward /= counter
             self.reward.append(averaged_reward)
 
         self.final_policy()
@@ -144,7 +144,7 @@ class SARSA:
             time.sleep(0.5)
         env.close()
 
-    def last_training(self):
+    def train_reward(self):
         """
         Obtain the last 10 training episode rewards
 
@@ -153,7 +153,7 @@ class SARSA:
         """
         return sum(self.reward[-11:-1])/10
 
-    def last_test(self):
+    def test_reward(self):
         """
         Obtain the last testing episode reward
 
