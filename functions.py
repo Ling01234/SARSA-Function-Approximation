@@ -16,13 +16,14 @@ import time
 
 
 class SARSA:
-    def __init__(self, env, alpha, temp, gamma, num_episodes, expected):
+    def __init__(self, env, alpha, temp, gamma, num_episodes, expected, epsilon):
         self.env = env
         self.alpha = alpha
         self.temp = temp
         self.gamma = gamma
         self.num_episodes = num_episodes
         self.expected = expected
+        self.epsilon = epsilon
         self.state_num = env.observation_space.n
         self.action_num = env.action_space.n
         self.learned_policy = np.zeros(self.state_num)  # learned policy
@@ -39,17 +40,31 @@ class SARSA:
             state (int): current state in the game
             episode (int): current episode in the run
         """
-        if episode != 0 and episode % 11 == 0:
-            action = int(self.learned_policy[state])
-            return action
+        # if episode != 0 and episode % 11 == 0:
+        #     action = int(self.learned_policy[state])
+        #     return action
 
-        action_values = self.Qvalues[state, :]
-        preferences = action_values/self.temp
-        preferences = softmax(preferences)
-        action = np.random.choice(a=np.arange(
-            self.action_num), p=preferences)
+        # action_values = self.Qvalues[state, :]
+        # preferences = action_values/self.temp
+        # preferences = softmax(preferences)
+        # action = np.random.choice(a=np.arange(
+        #     self.action_num), p=preferences)
 
-        return action
+        # return action
+
+        if episode < 100:
+            return np.random.choice(self.action_num)
+
+        randomNumber = np.random.random()
+
+        if episode > 1000:
+            self.epsilon = 0.9*self.epsilon
+
+        if randomNumber < self.epsilon:
+            return np.random.choice(self.action_num)
+
+        else:
+            return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
 
     def simulate_episodes(self, verbose=False):
         """
