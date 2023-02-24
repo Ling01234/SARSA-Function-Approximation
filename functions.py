@@ -40,6 +40,10 @@ class SARSA:
             state (int): current state in the game
             episode (int): current episode in the run
         """
+        # choose action randomly
+        # if episode < 100:
+        #     return np.random.choice(self.action_num)
+
         # if episode != 0 and episode % 11 == 0:
         #     action = int(self.learned_policy[state])
         #     return action
@@ -52,10 +56,9 @@ class SARSA:
 
         # return action
 
+        randomNumber = np.random.random()
         if episode < 100:
             return np.random.choice(self.action_num)
-
-        randomNumber = np.random.random()
 
         if episode > 1000:
             self.epsilon = 0.9*self.epsilon
@@ -76,7 +79,7 @@ class SARSA:
         Returns:
             np array: an array that contains the reward for each episode
         """
-        for episode in tqdm(range(self.num_episodes)):
+        for episode in tqdm(range(1, self.num_episodes+1)):
             # reset env
             (state, _) = self.env.reset()
             action = self.select_action(state, episode)
@@ -117,7 +120,7 @@ class SARSA:
 
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
-            if episode >= self.num_episodes - 11:
+            if episode > self.num_episodes - 11:
                 self.reward.append(episode_reward)
 
         self.final_policy()
