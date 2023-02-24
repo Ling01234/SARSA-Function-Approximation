@@ -61,26 +61,26 @@ class SARSA:
         Returns:
             np array: an array that contains the reward for each episode
         """
-        total_reward = []
         for episode in tqdm(range(self.num_episodes)):
             # reset env
-            (state, prob) = self.env.reset()
+            (state, _) = self.env.reset()
             action = self.select_action(state, episode)
 
             if verbose:
                 print(f"Simulating episode {episode}.")
 
-            averaged_reward = 0
+            episode_reward = 0
             terminal = False
             # move at most 100 times in a single episode
             # avoid to be stuck in infinite loop
             # if game can't terminate in 100 moves -> reward 0
-            for _ in range(100):
+            for s in range(100):
                 if terminal:
                     break
 
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-                averaged_reward += reward
+                if episode >= self.num_episodes - 11:
+                    episode_reward += reward * self.gamma ** s
 
                 # next action
                 next_action = self.select_action(next_state, episode)
@@ -102,8 +102,8 @@ class SARSA:
 
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
-
-            self.reward.append(averaged_reward)
+            if episode >= self.num_episodes - 11:
+                self.reward.append(episode_reward)
 
         self.final_policy()
 
@@ -132,7 +132,8 @@ class SARSA:
             terminal = False
         for i in range(100):
             if not terminal:
-                (state, reward, terminal,_,_) = env.step(int(self.learned_policy[state]))
+                (state, reward, terminal, _, _) = env.step(
+                    int(self.learned_policy[state]))
                 time.sleep(1)
             else:
                 break
