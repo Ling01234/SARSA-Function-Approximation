@@ -41,33 +41,34 @@ class SARSA:
             episode (int): current episode in the run
         """
         # choose action randomly
-        # if episode < 100:
-        #     return np.random.choice(self.action_num)
-
-        # if episode != 0 and episode % 11 == 0:
-        #     action = int(self.learned_policy[state])
-        #     return action
-
-        # action_values = self.Qvalues[state, :]
-        # preferences = action_values/self.temp
-        # preferences = softmax(preferences)
-        # action = np.random.choice(a=np.arange(
-        #     self.action_num), p=preferences)
-
-        # return action
-
-        randomNumber = np.random.random()
         if episode < 100:
             return np.random.choice(self.action_num)
 
-        if episode > 1000:
-            self.epsilon = 0.9*self.epsilon
+        if episode != 0 and episode % 11 == 0:
+            action = int(self.learned_policy[state])
+            return action
 
-        if randomNumber < self.epsilon:
-            return np.random.choice(self.action_num)
+        action_values = self.Qvalues[state, :]
+        preferences = action_values/self.temp
+        preferences = softmax(preferences)
+        print(f"episode {episode}, preferences {preferences}")
+        action = np.random.choice(a=np.arange(
+            self.action_num), p=preferences)
 
-        else:
-            return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
+        return action
+
+        # randomNumber = np.random.random()
+        # if episode < 100:
+        #     return np.random.choice(self.action_num)
+
+        # if episode > 1000:
+        #     self.epsilon = 0.9*self.epsilon
+
+        # if randomNumber < self.epsilon:
+        #     return np.random.choice(self.action_num)
+
+        # else:
+        #     return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
 
     def simulate_episodes(self, verbose=False):
         """
@@ -97,7 +98,7 @@ class SARSA:
                     break
 
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-                if episode >= self.num_episodes - 11:
+                if episode > self.num_episodes - 11:
                     episode_reward += reward * self.gamma ** s
 
                 # next action
