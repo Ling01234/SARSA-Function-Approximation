@@ -41,21 +41,27 @@ class SARSA:
             episode (int): current episode in the run
         """
         # choose action randomly
-        if episode < 100:
+        if episode < 500:
             return np.random.choice(self.action_num)
 
         if episode != 0 and episode % 11 == 0:
             action = int(self.learned_policy[state])
             return action
 
-        action_values = self.Qvalues[state, :]
-        preferences = action_values/self.temp
-        preferences = softmax(preferences)
-        print(f"episode {episode}, preferences {preferences}")
-        action = np.random.choice(a=np.arange(
-            self.action_num), p=preferences)
+        if episode > 1000:
+            self.epsilon = self.epsilon * 0.9
 
-        return action
+        randomNumber = np.random.random()
+        if randomNumber < self.epsilon:
+            action_values = self.Qvalues[state, :]
+            preferences = action_values/self.temp
+            preferences = softmax(preferences)
+            # print(f"episode {episode}, preferences {preferences}")
+            action = np.random.choice(a=np.arange(
+                self.action_num), p=preferences)
+            return action
+        else:
+            return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
 
         # randomNumber = np.random.random()
         # if episode < 100:
@@ -80,7 +86,7 @@ class SARSA:
         Returns:
             np array: an array that contains the reward for each episode
         """
-        for episode in tqdm(range(1, self.num_episodes+1)):
+        for episode in range(1, self.num_episodes+1):
             # reset env
             (state, _) = self.env.reset()
             action = self.select_action(state, episode)
@@ -98,8 +104,7 @@ class SARSA:
                     break
 
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-                if episode > self.num_episodes - 11:
-                    episode_reward += reward * self.gamma ** s
+                episode_reward += reward * self.gamma ** s
 
                 # next action
                 next_action = self.select_action(next_state, episode)
@@ -121,8 +126,7 @@ class SARSA:
 
             if episode % 10 == 0:  # update policy for each segment
                 self.final_policy()
-            if episode > self.num_episodes - 11:
-                self.reward.append(episode_reward)
+            self.reward.append(episode_reward)
 
         self.final_policy()
 
