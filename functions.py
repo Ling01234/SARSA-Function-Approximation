@@ -8,6 +8,14 @@ from tqdm import tqdm
 import time
 # from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
+# params initialization
+ALPHAS = [0.1, 0.3, 0.6]
+GAMMA = 0.95
+TEMPERATURE = [0.5, 50, 100]
+EPISODES = 5500
+SEEDS = np.arange(10)
+EPSILON = 0.2
+
 # Actions:
 # 0: left
 # 1: down
@@ -184,3 +192,176 @@ class SARSA:
             int: last testing episode reward
         """
         return self.reward[-1]
+
+
+def training_sarsa():
+    for temp in tqdm(TEMPERATURE):
+        rewards_train = []
+        for alpha in ALPHAS:
+            average_reward_train = 0
+            for seed in SEEDS:
+                random.seed(seed)
+
+                env = gym.make("FrozenLake-v1", desc=None,
+                               map_name="4x4", is_slippery=True)
+                env.reset()
+                sarsa = SARSA(env, alpha, temp, GAMMA,
+                              EPISODES, False, EPSILON)
+                sarsa.simulate_episodes()
+                # final_policy = sarsa.learned_policy
+                train_reward = sarsa.train_reward()
+                average_reward_train += train_reward
+
+            average_reward_train = average_reward_train/10
+            rewards_train.append(average_reward_train)
+
+        plt.plot(ALPHAS, rewards_train, label=f"temperature = {temp}")
+
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title("Training on SARSA")
+    plt.xlabel("alpha")
+    plt.ylabel("Return")
+    plt.show()
+
+
+def testing_sarsa():
+    for temp in tqdm(TEMPERATURE):
+        rewards_test = []
+        for alpha in ALPHAS:
+            average_reward_test = 0
+            for seed in SEEDS:
+                random.seed(seed)
+
+                env = gym.make("FrozenLake-v1", desc=None,
+                               map_name="4x4", is_slippery=True)
+                env.reset()
+                sarsa = SARSA(env, alpha, temp, GAMMA,
+                              EPISODES, False, EPSILON)
+                sarsa.simulate_episodes()
+                # final_policy = sarsa.learned_policy
+                test_reward = sarsa.test_reward()
+                average_reward_test += test_reward
+
+            average_reward_test = average_reward_test/10
+            rewards_test.append(average_reward_test)
+
+        plt.plot(ALPHAS, rewards_test, label=f"temperature = {temp}")
+
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title("Testing on SARSA")
+    plt.xlabel("alpha")
+    plt.ylabel("Return")
+    plt.show()
+
+
+def best_params_sarsa(alpha, temp):
+    train_reward = []
+    for seed in tqdm(SEEDS):
+        random.seed(seed)
+        env = gym.make("FrozenLake-v1", desc=None,
+                       map_name="4x4", is_slippery=True)
+        env.reset()
+        sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES,
+                      False, EPSILON)  # best params chosen
+        sarsa.simulate_episodes()
+        reward = sarsa.reward
+        train_reward.append(reward)
+
+    train_reward = np.array(train_reward)
+    train_reward = np.mean(train_reward, axis=0)
+    x = np.arange(5500)
+
+    plt.plot(x, train_reward)
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title("Return of Agent over the Course of Training for SARSA")
+    plt.xlabel("Episode averaged over 10 runs")
+    plt.ylabel("Return")
+    plt.xlim(0, 6000)
+    plt.ylim(0, 1)
+    plt.show()
+
+
+def training_esarsa():
+    for temp in tqdm(TEMPERATURE):
+        rewards_train = []
+        for alpha in ALPHAS:
+            average_reward_train = 0
+            for seed in SEEDS:
+                random.seed(seed)
+
+                env = gym.make("FrozenLake-v1", desc=None,
+                               map_name="4x4", is_slippery=True)
+                env.reset()
+                sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES, True, EPSILON)
+                sarsa.simulate_episodes()
+                # final_policy = sarsa.learned_policy
+                train_reward = sarsa.train_reward()
+                average_reward_train += train_reward
+
+            average_reward_train = average_reward_train/10
+            rewards_train.append(average_reward_train)
+
+        plt.plot(ALPHAS, rewards_train, label=f"temperature = {temp}")
+
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title("Training on Expected SARSA")
+    plt.xlabel("alpha")
+    plt.ylabel("Return")
+    plt.show()
+
+
+def testing_esarsa():
+    for temp in tqdm(TEMPERATURE):
+        rewards_test = []
+        for alpha in ALPHAS:
+            average_reward_test = 0
+            for seed in SEEDS:
+                random.seed(seed)
+
+                env = gym.make("FrozenLake-v1", desc=None,
+                               map_name="4x4", is_slippery=True)
+                env.reset()
+                sarsa = SARSA(env, alpha, temp, GAMMA,
+                              EPISODES, False, EPSILON)
+                sarsa.simulate_episodes()
+                # final_policy = sarsa.learned_policy
+                test_reward = sarsa.test_reward()
+                average_reward_test += test_reward
+
+            average_reward_test = average_reward_test/10
+            rewards_test.append(average_reward_test)
+
+        plt.plot(ALPHAS, rewards_test, label=f"temperature = {temp}")
+
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title("Testing on Expected SARSA")
+    plt.xlabel("alpha")
+    plt.ylabel("Return")
+    plt.show()
+
+
+def best_params_esarsa():
+    train_reward = []
+    for seed in tqdm(SEEDS):
+        random.seed(seed)
+        env = gym.make("FrozenLake-v1", desc=None,
+                       map_name="4x4", is_slippery=True)
+        env.reset()
+        sarsa = SARSA(env, 0.1, 50, GAMMA, EPISODES,
+                      True, EPSILON)  # best params chosen
+        sarsa.simulate_episodes()
+        reward = sarsa.reward
+        train_reward.append(reward)
+
+    train_reward = np.array(train_reward)
+    train_reward = np.mean(train_reward, axis=0)
+    x = np.arange(5500)
+
+    plt.plot(x, train_reward)
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title("Return of Agent over the Course of Training for Expected SARSA")
+    plt.xlabel("Episode averaged over 10 runs")
+    plt.ylabel("Return")
+    plt.xlim(0, 6000)
+    plt.ylim(0, 1)
+    plt.show()
