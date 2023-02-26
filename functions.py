@@ -131,7 +131,15 @@ class SARSA:
                                                                        action] + self.alpha * loss
 
                     else:  # expected sarsa
-                        continue
+                        expected = 0
+                        for a in range(4):
+                            expected += self.learned_policy[next_state] * \
+                                self.Qvalues[next_state,
+                                             a]  # learned policy is wrong
+                        loss = reward + self.gamma * expected - \
+                            self.Qvalues[state, action]
+                        self.Qvalues[state, action] = self.Qvalues[state,
+                                                                   action] + self.alpha * loss
 
                 state = next_state
                 action = next_action
@@ -340,14 +348,14 @@ def testing_esarsa():
     plt.show()
 
 
-def best_params_esarsa():
+def best_params_esarsa(alpha, temp):
     train_reward = []
     for seed in tqdm(SEEDS):
         random.seed(seed)
         env = gym.make("FrozenLake-v1", desc=None,
                        map_name="4x4", is_slippery=True)
         env.reset()
-        sarsa = SARSA(env, 0.1, 50, GAMMA, EPISODES,
+        sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES,
                       True, EPSILON)  # best params chosen
         sarsa.simulate_episodes()
         reward = sarsa.reward
