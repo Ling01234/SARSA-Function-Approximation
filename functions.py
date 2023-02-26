@@ -397,8 +397,7 @@ def testing_esarsa():
                 env = gym.make("FrozenLake-v1", desc=None,
                                map_name="4x4", is_slippery=True)
                 env.reset()
-                sarsa = SARSA(env, alpha, temp, GAMMA,
-                              EPISODES, False, EPSILON)
+                sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES, True, EPSILON)
                 sarsa.simulate_episodes()
                 # final_policy = sarsa.learned_policy
                 test_reward = sarsa.test_reward()
