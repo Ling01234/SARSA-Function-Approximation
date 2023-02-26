@@ -104,6 +104,7 @@ class SARSA:
 
             episode_reward = 0
             terminal = False
+
             # move at most 100 times in a single episode
             # avoid to be stuck in infinite loop
             # if game can't terminate in 100 moves -> reward 0
@@ -135,6 +136,17 @@ class SARSA:
         self.final_policy()
 
     def sarsa_update(self, state, next_state, action, next_action, reward, terminal):
+        """
+        Update rule for SARSA.
+
+        Args:
+            state (int): current state
+            next_state (int): next state
+            action (int): current action
+            next_action (int): next action
+            reward (int): reward
+            terminal (bool): True if agent is at terminal state, False otherwise
+        """
         if not terminal:
             loss = reward + self.gamma * \
                 self.Qvalues[next_state, next_action] - \
@@ -147,6 +159,15 @@ class SARSA:
                                                        action] + self.alpha * loss
 
     def expected_update(self, state, next_state, action, reward):
+        """
+        Update rule for Expected SARSA.
+
+        Args:
+            state (int): current state
+            next_state (int): next state
+            action (int): current action
+            reward (int): reward
+        """
         expected = 0
         q_max = np.max(self.Qvalues[next_state, :])
         greedy_actions = 0
@@ -171,22 +192,23 @@ class SARSA:
 
     def final_policy(self):
         """
-        Obtain the best policy based on the episodes played.
+        Calculate the best policy based on the episodes played.
         """
         for i in range(self.state_num):
             self.learned_policy[i] = np.random.choice(np.where(
                 self.Qvalues[i] == np.max(self.Qvalues[i]))[0])  # may have more than 1 max
 
-    def visualize(self, num_games):
+    def visualize(self, num_games, slippery=True):
         """
         Visualize the game being played on pygame
 
         Args:
             num_games (int): number of games to be played
+            slippery (bool): True if env is slippery, False otherwise
         """
         for _ in range(num_games):
             env = gym.make("FrozenLake-v1", desc=None,
-                           map_name="4x4", is_slippery=False, render_mode="human")
+                           map_name="4x4", is_slippery=slippery, render_mode="human")
             (state, prob) = env.reset()
             env.render()
             time.sleep(1)
@@ -222,6 +244,11 @@ class SARSA:
 
 
 def training_sarsa():
+    """
+    Function to simulate sarsa in training.
+    The function plots the alpha values against return by agent.
+    The function illustrates the effect of 3 different temperatures.
+    """
     for temp in tqdm(TEMPERATURE):
         rewards_train = []
         for alpha in ALPHAS:
@@ -252,6 +279,11 @@ def training_sarsa():
 
 
 def testing_sarsa():
+    """
+    Function to simulate sarsa in testing.
+    The function plots the alpha values against return by agent.
+    The function illustrates the effect of 3 different temperatures.
+    """
     for temp in tqdm(TEMPERATURE):
         rewards_test = []
         for alpha in ALPHAS:
@@ -282,6 +314,13 @@ def testing_sarsa():
 
 
 def best_params_sarsa(alpha, temp):
+    """
+    Plot the learning curve based on the best params on sarsa.
+
+    Args:
+        alpha (float): alpha value
+        temp (float): temperature value
+    """
     train_reward = []
     for seed in tqdm(SEEDS):
         random.seed(seed)
@@ -309,6 +348,11 @@ def best_params_sarsa(alpha, temp):
 
 
 def training_esarsa():
+    """
+    Function to simulate expected sarsa in training.
+    The function plots the alpha values against return by agent.
+    The function illustrates the effect of 3 different temperatures.
+    """
     for temp in tqdm(TEMPERATURE):
         rewards_train = []
         for alpha in ALPHAS:
@@ -338,6 +382,11 @@ def training_esarsa():
 
 
 def testing_esarsa():
+    """
+    Function to simulate expected sarsa in testing.
+    The function plots the alpha values against return by agent.
+    The function illustrates the effect of 3 different temperatures.
+    """
     for temp in tqdm(TEMPERATURE):
         rewards_test = []
         for alpha in ALPHAS:
@@ -368,6 +417,13 @@ def testing_esarsa():
 
 
 def best_params_esarsa(alpha, temp):
+    """
+    Plot the learning curve based on the best params on expected sarsa.
+
+    Args:
+        alpha (float): alpha value
+        temp (float): temperature value
+    """
     train_reward = []
     for seed in tqdm(SEEDS):
         random.seed(seed)
