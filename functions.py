@@ -119,27 +119,11 @@ class SARSA:
 
                 if episode % 11 != 0:  # does not update Qvalues on testing episode
                     if not self.expected:  # sarsa
-                        if not terminal:
-                            loss = reward + self.gamma * \
-                                self.Qvalues[next_state, next_action] - \
-                                self.Qvalues[state, action]
-                            self.Qvalues[state, action] = self.Qvalues[state,
-                                                                       action] + self.alpha * loss
-                        else:  # terminal state
-                            loss = reward - self.Qvalues[state, action]
-                            self.Qvalues[state, action] = self.Qvalues[state,
-                                                                       action] + self.alpha * loss
+                        self.sarsa_update(
+                            state, next_state, action, next_action, reward, terminal)
 
                     else:  # expected sarsa
-                        expected = 0
-                        for a in range(4):
-                            expected += self.learned_policy[next_state] * \
-                                self.Qvalues[next_state,
-                                             a]  # learned policy is wrong
-                        loss = reward + self.gamma * expected - \
-                            self.Qvalues[state, action]
-                        self.Qvalues[state, action] = self.Qvalues[state,
-                                                                   action] + self.alpha * loss
+                        self.expected_update(state, next_state, action, reward)
 
                 state = next_state
                 action = next_action
@@ -149,6 +133,41 @@ class SARSA:
             self.reward.append(episode_reward)
 
         self.final_policy()
+
+    def sarsa_update(self, state, next_state, action, next_action, reward, terminal):
+        if not terminal:
+            loss = reward + self.gamma * \
+                self.Qvalues[next_state, next_action] - \
+                self.Qvalues[state, action]
+            self.Qvalues[state, action] = self.Qvalues[state,
+                                                       action] + self.alpha * loss
+        else:  # terminal state
+            loss = reward - self.Qvalues[state, action]
+            self.Qvalues[state, action] = self.Qvalues[state,
+                                                       action] + self.alpha * loss
+
+    def expected_update(self, state, next_state, action, reward):
+        expected = 0
+        q_max = np.max(self.Qvalues[next_state, :])
+        greedy_actions = 0
+
+        for a in range(self.action_num):  # count number of greedy actions
+            if self.Qvalues[next_state][a] == q_max:
+                greedy_actions += 1
+
+        non_greedy_prob = self.epsilon / self.action_num
+        greedy_prob = 1 - self.epsilon + self.epsilon/greedy_actions
+
+        for a in range(self.action_num):
+            if self.Qvalues[next_state][a] == q_max:
+                expected += greedy_prob * self.Qvalues[next_state][a]
+
+            else:  # non greedy
+                expected += non_greedy_prob * self.Qvalues[next_state][a]
+
+        loss = reward + self.gamma * expected - \
+            self.Qvalues[state, action]
+        self.Qvalues[state, action] += self.alpha * loss
 
     def final_policy(self):
         """
