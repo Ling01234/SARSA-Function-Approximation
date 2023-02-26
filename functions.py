@@ -338,7 +338,6 @@ def best_params_sarsa(alpha, temp):
     x = np.arange(5500)
 
     plt.plot(x, train_reward)
-    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
     plt.title("Return of Agent over the Course of Training for SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
@@ -440,7 +439,6 @@ def best_params_esarsa(alpha, temp):
     x = np.arange(5500)
 
     plt.plot(x, train_reward)
-    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
     plt.title("Return of Agent over the Course of Training for Expected SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
