@@ -8,6 +8,7 @@ from tqdm import tqdm
 import time
 # from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
+
 # params initialization
 ALPHAS = [0.1, 0.3, 0.6]
 GAMMA = 0.95
