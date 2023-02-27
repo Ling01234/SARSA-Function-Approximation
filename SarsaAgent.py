@@ -326,10 +326,12 @@ def best_params_sarsa(alpha, temp):
         train_reward.append(reward)
 
     train_reward = np.array(train_reward)
-    train_reward = np.mean(train_reward, axis=0)
+    train_reward_mean = np.mean(train_reward, axis=0)
+    train_reward_sd = np.sd(train_reward, axis=0)
     x = np.arange(5500)
 
-    plt.plot(x, train_reward)
+    plt.plot(x, train_reward_mean)
+    plt.plot(x, train_reward_sd)
     plt.title("Return of Agent over the Course of Training for SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
@@ -427,10 +429,12 @@ def best_params_esarsa(alpha, temp):
         train_reward.append(reward)
 
     train_reward = np.array(train_reward)
-    train_reward = np.mean(train_reward, axis=0)
+    train_reward_mean = np.mean(train_reward, axis=0)
+    train_reward_sd = np.sd(train_reward, axis=0)
     x = np.arange(5500)
 
-    plt.plot(x, train_reward)
+    plt.plot(x, train_reward_mean)
+    plt.plot(x, train_reward_sd)
     plt.title("Return of Agent over the Course of Training for Expected SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
