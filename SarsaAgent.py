@@ -10,9 +10,9 @@ import time
 
 
 # params initialization
-ALPHAS = [0.1, 0.3, 0.6]
+ALPHAS = [0.001, 0.01, 0.05, 0.1]
 GAMMA = 0.95
-TEMPERATURE = [0.5, 50, 100]
+TEMPERATURE = [0.001, 0.01, 0.05, 0.1, 0.5, 50]
 EPISODES = 5500
 SEEDS = np.arange(10)
 EPSILON = 0.2
@@ -49,28 +49,29 @@ class SARSA:
             state (int): current state in the game
             episode (int): current episode in the run
         """
-        # choose action randomly
-        if episode < 500:
-            return np.random.choice(self.action_num)
-
         if episode != 0 and episode % 11 == 0:
             action = int(self.learned_policy[state])
             return action
 
-        if episode > 1000:
-            self.epsilon = self.epsilon * 0.9
+        action_values = self.Qvalues[state, :]
+        preferences = action_values/self.temp
+        preferences = softmax(preferences)
+        # print(f"episode {episode}, preferences {preferences}")
+        action = np.random.choice(a=np.arange(
+            self.action_num), p=preferences)
+        return action
 
-        randomNumber = np.random.random()
-        if randomNumber < self.epsilon:
-            action_values = self.Qvalues[state, :]
-            preferences = action_values/self.temp
-            preferences = softmax(preferences)
-            # print(f"episode {episode}, preferences {preferences}")
-            action = np.random.choice(a=np.arange(
-                self.action_num), p=preferences)
-            return action
-        else:
-            return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
+        # # choose action randomly
+        # if episode < 500:
+        #     return np.random.choice(self.action_num)
+
+        # if episode > 1000:
+        #     self.epsilon = self.epsilon * 0.9
+
+        # randomNumber = np.random.random()
+        # if randomNumber < self.epsilon:
+        # else:
+        #     return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
 
         # randomNumber = np.random.random()
         # if episode < 100:
@@ -170,22 +171,12 @@ class SARSA:
             reward (int): reward
         """
         expected = 0
-        q_max = np.max(self.Qvalues[next_state, :])
-        greedy_actions = 0
-
-        for a in range(self.action_num):  # count number of greedy actions
-            if self.Qvalues[next_state][a] == q_max:
-                greedy_actions += 1
-
-        non_greedy_prob = self.epsilon / self.action_num
-        greedy_prob = 1 - self.epsilon + self.epsilon/greedy_actions
+        action_values = self.Qvalues[state, :]
+        preferences = action_values/self.temp
+        preferences = softmax(preferences)
 
         for a in range(self.action_num):
-            if self.Qvalues[next_state][a] == q_max:
-                expected += greedy_prob * self.Qvalues[next_state][a]
-
-            else:  # non greedy
-                expected += non_greedy_prob * self.Qvalues[next_state][a]
+            expected += preferences[a] * self.Qvalues[next_state][a]
 
         loss = reward + self.gamma * expected - \
             self.Qvalues[state, action]
