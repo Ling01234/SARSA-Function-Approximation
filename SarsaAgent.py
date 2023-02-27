@@ -327,7 +327,7 @@ def best_params_sarsa(alpha, temp):
 
     train_reward = np.array(train_reward)
     train_reward_mean = np.mean(train_reward, axis=0)
-    train_reward_sd = np.sd(train_reward, axis=0)
+    train_reward_sd = np.std(train_reward, axis=0)
     x = np.arange(5500)
 
     plt.plot(x, train_reward_mean)
@@ -430,7 +430,7 @@ def best_params_esarsa(alpha, temp):
 
     train_reward = np.array(train_reward)
     train_reward_mean = np.mean(train_reward, axis=0)
-    train_reward_sd = np.sd(train_reward, axis=0)
+    train_reward_sd = np.std(train_reward, axis=0)
     x = np.arange(5500)
 
     plt.plot(x, train_reward_mean)
