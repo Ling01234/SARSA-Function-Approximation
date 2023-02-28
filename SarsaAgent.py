@@ -10,9 +10,9 @@ import time
 
 
 # params initialization
-ALPHAS = [0.001, 0.01, 0.05, 0.1]
+ALPHAS = [0.01, 0.1, 0.5]
 GAMMA = 0.95
-TEMPERATURE = [0.001, 0.01, 0.05, 0.1, 0.5, 50]
+TEMPERATURE = [0.05, 0.1, 50]
 EPISODES = 5500
 SEEDS = np.arange(10)
 EPSILON = 0.2
@@ -331,7 +331,7 @@ def best_params_sarsa(alpha, temp):
     x = np.arange(5500)
 
     plt.plot(x, train_reward_mean)
-    plt.plot(x, train_reward_sd)
+    # plt.plot(x, train_reward_sd)
     plt.title("Return of Agent over the Course of Training for SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
@@ -434,7 +434,7 @@ def best_params_esarsa(alpha, temp):
     x = np.arange(5500)
 
     plt.plot(x, train_reward_mean)
-    plt.plot(x, train_reward_sd)
+    # plt.plot(x, train_reward_sd)
     plt.title("Return of Agent over the Course of Training for Expected SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
