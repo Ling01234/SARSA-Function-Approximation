@@ -5,6 +5,7 @@ import gymnasium as gym
 from scipy.special import softmax
 import random
 from tqdm import tqdm
+from scipy.stats import sem
 import time
 # from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
@@ -49,42 +50,19 @@ class SARSA:
             state (int): current state in the game
             episode (int): current episode in the run
         """
-        if episode != 0 and episode % 11 == 0:
-            action = int(self.learned_policy[state])
+        action_values = self.Qvalues[state, :]
+
+        if episode % 11 == 0:
+            # randomized best action
+            action = np.random.choice(
+                np.where(action_values == np.max(action_values))[0])
             return action
 
-        action_values = self.Qvalues[state, :]
         preferences = action_values/self.temp
         preferences = softmax(preferences)
-        # print(f"episode {episode}, preferences {preferences}")
         action = np.random.choice(a=np.arange(
             self.action_num), p=preferences)
         return action
-
-        # # choose action randomly
-        # if episode < 500:
-        #     return np.random.choice(self.action_num)
-
-        # if episode > 1000:
-        #     self.epsilon = self.epsilon * 0.9
-
-        # randomNumber = np.random.random()
-        # if randomNumber < self.epsilon:
-        # else:
-        #     return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
-
-        # randomNumber = np.random.random()
-        # if episode < 100:
-        #     return np.random.choice(self.action_num)
-
-        # if episode > 1000:
-        #     self.epsilon = 0.9*self.epsilon
-
-        # if randomNumber < self.epsilon:
-        #     return np.random.choice(self.action_num)
-
-        # else:
-        #     return np.random.choice(np.where(self.Qvalues[state, :] == np.max(self.Qvalues[state, :]))[0])
 
     def simulate_episodes(self, verbose=False):
         """
@@ -115,7 +93,7 @@ class SARSA:
                     break
 
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-                episode_reward += reward * self.gamma ** s
+                episode_reward += reward * (self.gamma ** s)
 
                 # next action
                 next_action = self.select_action(next_state, episode)
@@ -153,12 +131,10 @@ class SARSA:
             loss = reward + self.gamma * \
                 self.Qvalues[next_state, next_action] - \
                 self.Qvalues[state, action]
-            self.Qvalues[state, action] = self.Qvalues[state,
-                                                       action] + self.alpha * loss
+            self.Qvalues[state, action] += self.alpha * loss
         else:  # terminal state
             loss = reward - self.Qvalues[state, action]
-            self.Qvalues[state, action] = self.Qvalues[state,
-                                                       action] + self.alpha * loss
+            self.Qvalues[state, action] += self.alpha * loss
 
     def expected_update(self, state, next_state, action, reward):
         """
@@ -171,7 +147,7 @@ class SARSA:
             reward (int): reward
         """
         expected = 0
-        action_values = self.Qvalues[state, :]
+        action_values = self.Qvalues[next_state, :]
         preferences = action_values/self.temp
         preferences = softmax(preferences)
 
@@ -258,7 +234,7 @@ def training_sarsa():
                 train_reward = sarsa.train_reward()
                 average_reward_train += train_reward
 
-            average_reward_train = average_reward_train/10
+            average_reward_train /= 10
             rewards_train.append(average_reward_train)
 
         plt.plot(ALPHAS, rewards_train, label=f"temperature = {temp}")
@@ -327,16 +303,15 @@ def best_params_sarsa(alpha, temp):
 
     train_reward = np.array(train_reward)
     train_reward_mean = np.mean(train_reward, axis=0)
-    train_reward_sd = np.std(train_reward, axis=0)
+    sd = np.std(train_reward_mean)
     x = np.arange(5500)
 
     plt.plot(x, train_reward_mean)
-    # plt.plot(x, train_reward_sd)
+    plt.fill_between(x, 0, train_reward_mean + sd, alpha=0.35, color="g")
     plt.title("Return of Agent over the Course of Training for SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
     plt.xlim(0, 6000)
-    plt.ylim(0, 1)
     plt.show()
 
 
@@ -430,14 +405,13 @@ def best_params_esarsa(alpha, temp):
 
     train_reward = np.array(train_reward)
     train_reward_mean = np.mean(train_reward, axis=0)
-    train_reward_sd = np.std(train_reward, axis=0)
+    sd = np.std(train_reward_mean)
     x = np.arange(5500)
 
     plt.plot(x, train_reward_mean)
-    # plt.plot(x, train_reward_sd)
+    plt.fill_between(x, 0, train_reward_mean + sd, alpha=0.35, color="g")
     plt.title("Return of Agent over the Course of Training for Expected SARSA")
     plt.xlabel("Episode averaged over 10 runs")
     plt.ylabel("Return")
     plt.xlim(0, 6000)
-    plt.ylim(0, 1)
     plt.show()
