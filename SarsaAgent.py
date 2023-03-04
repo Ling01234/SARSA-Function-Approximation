@@ -9,6 +9,11 @@ from scipy.stats import sem
 import time
 # from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
+# Actions:
+# 0: left
+# 1: down
+# 2: right
+# 3: up
 
 # params initialization
 ALPHAS = [0.01, 0.1, 0.5]
@@ -17,12 +22,6 @@ TEMPERATURE = [0.05, 0.1, 50]
 EPISODES = 5500
 SEEDS = np.arange(10)
 EPSILON = 0.2
-
-# Actions:
-# 0: left
-# 1: down
-# 2: right
-# 3: up
 
 
 class SARSA:
