@@ -104,7 +104,8 @@ class SARSA:
                             state, next_state, action, next_action, reward, terminal)
 
                     else:  # expected sarsa
-                        self.expected_update(state, next_state, action, reward)
+                        self.expected_update(
+                            state, next_state, action, reward, terminal)
 
                 state = next_state
                 action = next_action
@@ -136,7 +137,7 @@ class SARSA:
             loss = reward - self.Qvalues[state, action]
             self.Qvalues[state, action] += self.alpha * loss
 
-    def expected_update(self, state, next_state, action, reward):
+    def expected_update(self, state, next_state, action, reward, terminal):
         """
         Update rule for Expected SARSA.
 
@@ -147,12 +148,14 @@ class SARSA:
             reward (int): reward
         """
         expected = 0
-        action_values = self.Qvalues[next_state, :]
-        preferences = action_values/self.temp
-        preferences = softmax(preferences)
 
-        for a in range(self.action_num):
-            expected += preferences[a] * self.Qvalues[next_state][a]
+        if not terminal:
+            action_values = self.Qvalues[next_state, :]
+            preferences = action_values/self.temp
+            preferences = softmax(preferences)
+
+            for a in range(self.action_num):
+                expected += preferences[a] * self.Qvalues[next_state][a]
 
         loss = reward + self.gamma * expected - \
             self.Qvalues[state, action]
@@ -182,15 +185,15 @@ class SARSA:
             time.sleep(1)
 
             terminal = False
-        for i in range(100):
-            if not terminal:
-                (state, reward, terminal, _, _) = env.step(
-                    int(self.learned_policy[state]))
-                time.sleep(1)
-            else:
-                break
-            time.sleep(0.5)
-        env.close()
+            for i in range(100):  # 100 steps game max
+                if not terminal:
+                    (state, reward, terminal, _, _) = env.step(
+                        int(self.learned_policy[state]))
+                    time.sleep(0.5)
+                else:  # terminal state
+                    break
+            time.sleep(1)
+            env.close()
 
     def train_reward(self):
         """
