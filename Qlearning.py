@@ -81,3 +81,35 @@ class Qlearning:
         best_states = np.where(self.Qvalues[discritized_state] == np.max(
             self.Qvalues[discritized_state]))[0]
         return np.random.choice(best_states)
+
+    def simulate_episodes(self):
+        for episode in range(1, self.num_episodes+1):
+            # reset env
+            (state, _) = self.env.reset()
+            state = list(state)
+
+            episode_reward = 0
+            terminal = False
+            while not terminal:
+                discritized_state = self.discritize_state(state)
+                action = self.select_action(state, episode)
+                (next_state, reward, terminal, _, _) = self.env.step(action)
+                episode_reward.append(reward)
+
+                next_discritized_state = self.discritize_state(
+                    list(next_state))
+                q_max = np.max(self.Qvalues[next_discritized_state])
+
+                self.qlearning_update(terminal, reward, action, state, q_max)
+                state = next_state
+
+            self.reward.append(episode_reward)
+
+    def qlearning_update(self, terminal, reward, action, state, q_max):
+        if not terminal:
+            loss = reward + self.gamma * q_max - \
+                self.Qvalues[state + (action,)]
+            self.Qvalues[state + (action,)] += self.alpha * loss
+        else:
+            loss = reward - self.Qvalues[state + (action,)]
+            self.Qvalues += self.alpha * loss
