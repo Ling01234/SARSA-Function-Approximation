@@ -91,7 +91,7 @@ class Qlearning:
             episode_reward = 0
             terminal = False
             while not terminal:
-                discritized_state = self.discritize_state(state)
+                state = self.discritize_state(state)
                 action = self.select_action(state, episode)
                 (next_state, reward, terminal, _, _) = self.env.step(action)
                 episode_reward.append(reward)
