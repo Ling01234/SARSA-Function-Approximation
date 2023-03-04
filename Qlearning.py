@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import gymnasium as gym
+import time
 
 # Actions:
 # 0: left
@@ -77,9 +79,8 @@ class Qlearning:
             return np.choice(self.num_action)
 
         # greedy selection
-        discritized_state = self.discritize_state(state)
-        best_states = np.where(self.Qvalues[discritized_state] == np.max(
-            self.Qvalues[discritized_state]))[0]
+        best_states = np.where(
+            self.Qvalues[state] == np.max(self.Qvalues[state]))[0]
         return np.random.choice(best_states)
 
     def simulate_episodes(self):
@@ -87,11 +88,12 @@ class Qlearning:
             # reset env
             (state, _) = self.env.reset()
             state = list(state)
+            state = self.discritize_state(state)
 
+            # run episode
             episode_reward = 0
             terminal = False
             while not terminal:
-                state = self.discritize_state(state)
                 action = self.select_action(state, episode)
                 (next_state, reward, terminal, _, _) = self.env.step(action)
                 episode_reward.append(reward)
@@ -113,3 +115,25 @@ class Qlearning:
         else:
             loss = reward - self.Qvalues[state + (action,)]
             self.Qvalues += self.alpha * loss
+
+    def visualize(self, games):
+        for game in range(games):
+            env = gym.make("CartPole-v1", render_mode="human")
+            (state, _) = env.reset()
+            env.render()
+            rewards = []
+
+            for _ in range(500):
+                discritized_state = self.discritize_state(state)
+                best_actions = np.where(self.Qvalues[discritized_state] == np.max(
+                    self.Qvalues[discritized_state])[0])
+                action = np.random.choice(best_actions)
+                (state, reward, terminal, _, _) = env.step(action)
+                rewards.append(reward)
+                time.sleep(0.01)
+
+                if terminal:
+                    time.sleep(1)
+                    break
+            print(f"reward for game {game}: {rewards}")
+            env.close()
