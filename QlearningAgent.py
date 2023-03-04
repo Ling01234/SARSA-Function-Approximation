@@ -23,17 +23,17 @@ class Qlearning:
         self.epsilon = epsilon
         self.num_episodes = num_episodes
         self.num_bins = num_bins
-        self.lowerbound = [-4.8, -4, -24, -10]
-        self.upperbound = [4.8, 4, 24, 10]
+        self.lowerbound = [-2.4, -4, -12, -10]
+        self.upperbound = [2.4, 4, 12, 10]
         self.seed = seed
         random.seed(seed)
 
         self.num_action = env.action_space.n
         self.reward = []
-        self.Qvalues = np.zeros(
-            (self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
-        # self.Qvalues = np.random.uniform(low=-0.001, high=0.001,
-        #                                  size=(self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
+        # self.Qvalues = np.zeros(
+        #     (self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
+        self.Qvalues = np.random.uniform(low=-0.001, high=0.001,
+                                         size=(self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
         self.bins = []
         for i in range(4):
             self.bins.append(np.linspace(
@@ -55,7 +55,7 @@ class Qlearning:
         Discritize continuous state into a discrete state
 
         Args:
-            state (np array (4,)): current continuous state of agent
+            state (list of length 4): current continuous state of agent
 
         Returns:
             state (4-tuple): current discritized state of agent
@@ -63,18 +63,15 @@ class Qlearning:
         new_state = []
 
         for i in range(4):
-            bin = np.digitize(state[i], self.bins[i]) - 1
+            bin = np.maximum(np.digitize(state[i], self.bins[i]) - 1, 0)
             new_state.append(bin)
 
         return tuple(new_state)
 
     def select_action(self, state, episode):
-        print(f"in select action")
+        # # print(f"in select action")
         # if episode < 100:  # randomly explore in the first 100 episodes
         #     return np.random.choice(self.num_action)
-
-        if episode > 850:  # lower epsilon after many episodes
-            self.epsilon *= 0.95
 
         # epsilon greedy
         number = np.random.random()
@@ -82,12 +79,12 @@ class Qlearning:
             return np.random.choice(self.num_action)
 
         # greedy selection
-        print(f"in select action greedy")
+        # print(f"in select action greedy")
         state = self.discritize_state(state)
         best_actions = np.where(
             self.Qvalues[state] == np.max(self.Qvalues[state]))[0]
-        print(f"best actions: {best_actions}")
-        print(f"action values: {self.Qvalues[state]}")
+        # print(f"best actions: {best_actions}")
+        # print(f"action values: {self.Qvalues[state]}")
         return np.random.choice(best_actions)
 
     def simulate_episodes(self):
@@ -107,7 +104,7 @@ class Qlearning:
 
                 next_discritized_state = self.discritize_state(
                     list(next_state))
-                print(f"next state {next_discritized_state}")
+                # print(f"next state {next_discritized_state}")
                 q_max = np.max(self.Qvalues[next_discritized_state])
 
                 self.qlearning_update(
@@ -117,8 +114,8 @@ class Qlearning:
             self.reward.append(episode_reward)
 
     def qlearning_update(self, terminal, reward, action, state, q_max):
-        print("updating")
-        print(f"before: {self.Qvalues[state + (action,)]}")
+        # print("updating")
+        # print(f"before: {self.Qvalues[state + (action,)]}")
         if not terminal:
             # print(state + (action,))
             # print("---")
@@ -129,16 +126,16 @@ class Qlearning:
             loss = reward - self.Qvalues[state + (action,)]
 
         self.Qvalues[state + (action,)] += self.alpha * loss
-        print(f"after: {self.Qvalues[state + (action,)]}")
-        print("hello")
-        print(f"Qvalues: {self.Qvalues[state]}")
+        # print(f"after: {self.Qvalues[state + (action,)]}")
+        # print("hello")
+        # print(f"Qvalues: {self.Qvalues[state]}")
 
     def visualize(self, games):
+        env = gym.make("CartPole-v1", render_mode="human")
         for game in range(games):
-            env = gym.make("CartPole-v1", render_mode="human")
             (state, _) = env.reset()
             env.render()
-            rewards = []
+            rewards = 0
 
             for _ in range(500):
                 discritized_state = self.discritize_state(state)
@@ -146,11 +143,11 @@ class Qlearning:
                     self.Qvalues[discritized_state]))[0]
                 action = np.random.choice(best_actions)
                 (state, reward, terminal, _, _) = env.step(action)
-                rewards.append(reward)
-                time.sleep(0.01)
+                rewards += reward
+                time.sleep(0.05)
 
                 if terminal:
                     time.sleep(1)
                     break
             print(f"reward for game {game}: {rewards}")
-            env.close()
+        env.close()
