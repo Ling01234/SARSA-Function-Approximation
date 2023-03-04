@@ -47,6 +47,15 @@ class Qlearning:
     #     return state
 
     def discritize_state(self, state):
+        """
+        Discritize continuous state into a discrete state
+
+        Args:
+            state (np array (4,)): current continuous state of agent
+
+        Returns:
+            state (4-tuple): current discritized state of agent
+        """
         new_state = []
 
         for i in range(4):
@@ -54,3 +63,21 @@ class Qlearning:
             new_state.append(bin)
 
         return tuple(new_state)
+
+    def select_action(self, state, episode):
+        if episode < 100:  # randomly explore in the first 100 episodes
+            return np.choice(self.num_action)
+
+        if episode > 850:  # lower epsilon after many episodes
+            self.epsilon *= 0.95
+
+        # epsilon greedy
+        number = np.random.random()
+        if number < self.epsilon:  # uniformly choose action
+            return np.choice(self.num_action)
+
+        # greedy selection
+        discritized_state = self.discritize_state(state)
+        best_states = np.where(self.Qvalues[discritized_state] == np.max(
+            self.Qvalues[discritized_state]))[0]
+        return np.random.choice(best_states)
