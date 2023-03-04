@@ -28,16 +28,29 @@ class Qlearning:
 
         self.num_action = env.action_space.n
         self.reward = []
-        self.Qvalues = np.zeros(
-            (self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
+        self.Qvalues = np.random.uniform(low=-0.001, high=0.001,
+                                         shape=(self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
+        self.bins = []
+        for i in range(4):
+            self.bins.append(np.linspace(
+                self.lowerbound[i], self.upperbound[i], self.num_bins))
 
-    def init_start_state(self):
-        """
-        Generate starting observation to be between -0.001 and 0.001
+    # def init_start_state(self):
+    #     """
+    #     Generate starting observation to be between -0.001 and 0.001
 
-        Returns:
-            np array: starting state for a new episode with shape (4,)
-        """
-        (state, _) = self.env.reset()
-        state /= 50
-        return state
+    #     Returns:
+    #         np array: starting state for a new episode with shape (4,)
+    #     """
+    #     (state, _) = self.env.reset()
+    #     state /= 50
+    #     return state
+
+    def discritize_state(self, state):
+        new_state = []
+
+        for i in range(4):
+            bin = np.digitize(state[i], self.bins[i]-1)
+            new_state.append(bin)
+
+        return tuple(new_state)
