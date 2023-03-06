@@ -49,16 +49,18 @@ class ActorCritic(nn.Module):
             total_reward = reward + self.gamma * total_reward
             returns.insert(0, total_reward)
 
-        if len(returns) != 0:
-            returns = scale(returns)
+        returns = scale(returns)
         returns = torch.tensor(returns)
+        # returns = torch.tensor(returns)
+        # returns = (returns - returns.mean()) / \
+        #     (returns.std() + np.finfo(np.float32).eps.item())
 
         # print(f"out for loop, saved action: {self.saved_actions}")
         # print(f"out for loop, returns: {returns}")
         for (log_prob, state_value), total_reward in zip(self.saved_actions, returns):
             # print("in for loop")
-            a = total_reward - state_value.item()
-            policy_loss.append(-log_prob * a)
+            diff = total_reward - state_value.item()
+            policy_loss.append(-log_prob * diff)
             value_loss.append(f.smooth_l1_loss(
                 state_value, torch.tensor([total_reward])))
 
@@ -78,7 +80,7 @@ class ActorCritic(nn.Module):
 
             while not terminal:
                 action = self.select_action(state)
-                (next_state, reward, terminal, _, _) = self.env.step(action)
+                (state, reward, terminal, _, _) = self.env.step(action)
                 self.reward.append(reward)
                 episode_reward += reward
 
