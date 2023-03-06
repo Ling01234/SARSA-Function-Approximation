@@ -31,7 +31,6 @@ class Qlearning:
         self.upperbound[3] = 10
         self.seed = seed
         random.seed(seed)
-
         self.num_action = env.action_space.n
         self.reward = []
         self.Qvalues = np.random.uniform(low=-0.001, high=0.001,
@@ -46,13 +45,12 @@ class Qlearning:
         Discritize continuous state into a discrete state
 
         Args:
-            state (list of length 4): current continuous state of agent
+            state (list of length 4): Current continuous state of agent
 
         Returns:
-            state (4-tuple): current discritized state of agent
+            state (4-tuple): Current discritized state of agent
         """
         new_state = []
-
         for i in range(4):
             index = np.maximum(np.digitize(state[i], self.bins[i]) - 1, 0)
             new_state.append(index)
@@ -60,11 +58,21 @@ class Qlearning:
         return tuple(new_state)
 
     def select_action(self, state, episode):
+        """
+        Select action given a state
+
+        Args:
+            state (4-tuple): Current state of the agent, continuous
+            episode (int): Current episode of the run
+
+        Returns:
+            int: Action chosen by the agent
+        """
         random.seed(self.seed)
 
-        # # print(f"in select action")
-        # if episode < 100:  # randomly explore in the first 100 episodes
-        #     return np.random.choice(self.num_action)
+        # lower exploration rate as we run many episodes
+        if episode > 700:
+            self.epsilon *= 0.99
 
         # epsilon greedy
         number = np.random.random()
@@ -72,15 +80,15 @@ class Qlearning:
             return np.random.choice(self.num_action)
 
         # greedy selection
-        # print(f"in select action greedy")
         state = self.discritize_state(state)
         best_actions = np.where(
             self.Qvalues[state] == np.max(self.Qvalues[state]))[0]
-        # print(f"best actions: {best_actions}")
-        # print(f"action values: {self.Qvalues[state]}")
         return np.random.choice(best_actions)
 
     def simulate_episodes(self):
+        """
+        Simulate a specified number of episodes
+        """
         for episode in range(1, self.num_episodes+1):
             # reset env
             (state, _) = self.env.reset()
@@ -97,33 +105,42 @@ class Qlearning:
 
                 next_discritized_state = self.discritize_state(
                     list(next_state))
-                # print(f"next state {next_discritized_state}")
-                q_max = np.max(self.Qvalues[next_discritized_state])
 
+                q_max = np.max(self.Qvalues[next_discritized_state])
                 self.qlearning_update(
                     terminal, reward, action, discritized_state, q_max)
+
                 state = next_state
 
-            self.reward.append(episode_reward)
+            self.reward.append(int(episode_reward))
 
     def qlearning_update(self, terminal, reward, action, state, q_max):
-        # print("updating")
-        # print(f"before: {self.Qvalues[state + (action,)]}")
+        """
+        Qlearning update rule
+
+        Args:
+            terminal (bool): True if at terminal state, False otherwise
+            reward (int): Reward of the agent at current state
+            action (int): Action taken by agent
+            state (4-tuple): Discrete state of the agent
+            q_max (float): Max Q value of the next state
+        """
         if not terminal:
-            # print(state + (action,))
-            # print("---")
-            # print(self.Qvalues[state + (action,)])
             loss = reward + self.gamma * q_max - \
                 self.Qvalues[state + (action,)]
         else:
             loss = reward - self.Qvalues[state + (action,)]
 
         self.Qvalues[state + (action,)] += self.alpha * loss
-        # print(f"after: {self.Qvalues[state + (action,)]}")
-        # print("hello")
-        # print(f"Qvalues: {self.Qvalues[state]}")
 
     def visualize(self, games):
+        """
+        Visualize the game played for a specified number of games.
+        Prints out the reward for each game.
+
+        Args:
+            games (int): Number of games to be played
+        """
         random.seed(self.seed)
         env = gym.make("CartPole-v1", render_mode="human")
         for game in range(games):
@@ -137,7 +154,7 @@ class Qlearning:
                     self.Qvalues[discritized_state]))[0]
                 action = np.random.choice(best_actions)
                 (state, reward, terminal, _, _) = env.step(action)
-                rewards += reward
+                rewards += int(reward)
                 time.sleep(0.05)
 
                 if terminal:
