@@ -8,6 +8,8 @@ import torch.nn.functional as f
 import torch.optim as opt
 from torch.distributions import Categorical
 from sklearn.preprocessing import scale
+import statistics
+import collections
 
 
 class ActorCritic(nn.Module):
@@ -51,16 +53,11 @@ class ActorCritic(nn.Module):
 
         returns = scale(returns)
         returns = torch.tensor(returns)
-        # returns = torch.tensor(returns)
-        # returns = (returns - returns.mean()) / \
-        #     (returns.std() + np.finfo(np.float32).eps.item())
 
-        # print(f"out for loop, saved action: {self.saved_actions}")
-        # print(f"out for loop, returns: {returns}")
         for (log_prob, state_value), total_reward in zip(self.saved_actions, returns):
             # print("in for loop")
-            diff = total_reward - state_value.item()
-            policy_loss.append(-log_prob * diff)
+            adv = total_reward - state_value.item()
+            policy_loss.append(-log_prob * adv)
             value_loss.append(f.smooth_l1_loss(
                 state_value, torch.tensor([total_reward])))
 
@@ -73,6 +70,9 @@ class ActorCritic(nn.Module):
         del self.saved_actions[:]
 
     def simulate_episodes(self, verbose=False):
+        # won = False
+        running_reward = 0
+        episodes_reward = collections.deque(maxlen=100)
         for episode in range(1, self.num_episode + 1):
             (state, _) = self.env.reset()
             episode_reward = 0
@@ -87,9 +87,18 @@ class ActorCritic(nn.Module):
                 state = next_state
 
                 # if episode_reward >= 500:  # agent wins
+                #     won = True
                 #     break
 
             self.backprop()
 
             if verbose and episode % 10 == 0:
                 print(f"Episode {episode}, reward {int(episode_reward)}")
+
+            episodes_reward.append(episode_reward)
+            running_reward = statistics.mean(episodes_reward)
+
+            if running_reward > self.env.spec.reward_threshold and episode > 100:
+                print(
+                    f"Solved at episode {episode}, average reward: {running_reward:.2f}")
+                break
