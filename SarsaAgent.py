@@ -25,7 +25,7 @@ EPSILON = 0.2
 
 
 class SARSA:
-    def __init__(self, env, alpha, temp, gamma, num_episodes, expected, epsilon):
+    def __init__(self, env, alpha, temp, gamma, num_episodes, expected, epsilon, seed):
         self.env = env
         self.alpha = alpha
         self.temp = temp
@@ -39,6 +39,7 @@ class SARSA:
         # action value matrix
         self.Qvalues = np.zeros((self.state_num, self.action_num))
         self.reward = []
+        self.seed = seed
 
     def select_action(self, state, episode):
         """
@@ -49,6 +50,7 @@ class SARSA:
             state (int): current state in the game
             episode (int): current episode in the run
         """
+        random.seed(self.seed)
         action_values = self.Qvalues[state, :]
 
         if episode % 11 == 0:
@@ -73,6 +75,7 @@ class SARSA:
         Returns:
             np array: an array that contains the reward for each episode
         """
+        random.seed(self.seed)
         for episode in range(1, self.num_episodes+1):
             # reset env
             (state, _) = self.env.reset()
@@ -164,6 +167,7 @@ class SARSA:
         """
         Calculate the best policy based on the episodes played.
         """
+        random.seed(self.seed)
         for i in range(self.state_num):
             self.learned_policy[i] = np.random.choice(np.where(
                 self.Qvalues[i] == np.max(self.Qvalues[i]))[0])  # may have more than 1 max
@@ -224,13 +228,11 @@ def training_sarsa():
         for alpha in ALPHAS:
             average_reward_train = 0
             for seed in SEEDS:
-                random.seed(seed)
-
                 env = gym.make("FrozenLake-v1", desc=None,
                                map_name="4x4", is_slippery=True)
                 env.reset()
                 sarsa = SARSA(env, alpha, temp, GAMMA,
-                              EPISODES, False, EPSILON)
+                              EPISODES, False, EPSILON, seed)
                 sarsa.simulate_episodes()
                 # final_policy = sarsa.learned_policy
                 train_reward = sarsa.train_reward()
@@ -259,13 +261,11 @@ def testing_sarsa():
         for alpha in ALPHAS:
             average_reward_test = 0
             for seed in SEEDS:
-                random.seed(seed)
-
                 env = gym.make("FrozenLake-v1", desc=None,
                                map_name="4x4", is_slippery=True)
                 env.reset()
                 sarsa = SARSA(env, alpha, temp, GAMMA,
-                              EPISODES, False, EPSILON)
+                              EPISODES, False, EPSILON, seed)
                 sarsa.simulate_episodes()
                 # final_policy = sarsa.learned_policy
                 test_reward = sarsa.test_reward()
@@ -293,12 +293,11 @@ def best_params_sarsa(alpha, temp):
     """
     train_reward = []
     for seed in tqdm(SEEDS):
-        random.seed(seed)
         env = gym.make("FrozenLake-v1", desc=None,
                        map_name="4x4", is_slippery=True)
         env.reset()
         sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES,
-                      False, EPSILON)  # best params chosen
+                      False, EPSILON, seed)  # best params chosen
         sarsa.simulate_episodes()
         reward = sarsa.reward
         train_reward.append(reward)
@@ -328,12 +327,11 @@ def training_esarsa():
         for alpha in ALPHAS:
             average_reward_train = 0
             for seed in SEEDS:
-                random.seed(seed)
-
                 env = gym.make("FrozenLake-v1", desc=None,
                                map_name="4x4", is_slippery=True)
                 env.reset()
-                sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES, True, EPSILON)
+                sarsa = SARSA(env, alpha, temp, GAMMA,
+                              EPISODES, True, EPSILON, seed)
                 sarsa.simulate_episodes()
                 # final_policy = sarsa.learned_policy
                 train_reward = sarsa.train_reward()
@@ -362,12 +360,11 @@ def testing_esarsa():
         for alpha in ALPHAS:
             average_reward_test = 0
             for seed in SEEDS:
-                random.seed(seed)
-
                 env = gym.make("FrozenLake-v1", desc=None,
                                map_name="4x4", is_slippery=True)
                 env.reset()
-                sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES, True, EPSILON)
+                sarsa = SARSA(env, alpha, temp, GAMMA,
+                              EPISODES, True, EPSILON, seed)
                 sarsa.simulate_episodes()
                 # final_policy = sarsa.learned_policy
                 test_reward = sarsa.test_reward()
@@ -395,12 +392,11 @@ def best_params_esarsa(alpha, temp):
     """
     train_reward = []
     for seed in tqdm(SEEDS):
-        random.seed(seed)
         env = gym.make("FrozenLake-v1", desc=None,
                        map_name="4x4", is_slippery=True)
         env.reset()
         sarsa = SARSA(env, alpha, temp, GAMMA, EPISODES,
-                      True, EPSILON)  # best params chosen
+                      True, EPSILON, seed)  # best params chosen
         sarsa.simulate_episodes()
         reward = sarsa.reward
         train_reward.append(reward)

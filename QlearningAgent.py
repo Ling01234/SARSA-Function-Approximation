@@ -2,6 +2,10 @@ import numpy as np
 import random
 import gymnasium as gym
 import time
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+import matplotlib.colors as mcolors
+from scipy.stats import sem
 
 # Actions:
 # 0: left
@@ -9,6 +13,7 @@ import time
 
 # params initialization:
 ALPHAS = [1/4, 1/8, 1/16]
+GAMMA = 0.95
 EPSILONS = [0.05, 0.15, 0.25]
 BINS = 10
 EPISODES = 1000
@@ -162,3 +167,38 @@ class Qlearning:
                     break
             print(f"reward for game {game}: {rewards}")
         env.close()
+
+
+def train_qlearning():
+    x = np.arange(1000)
+    colors = [mcolors.TABLEAU_COLORS["tab:blue"],
+              mcolors.TABLEAU_COLORS["tab:green"], mcolors.TABLEAU_COLORS["tab:orange"]]
+    for epsilon in tqdm(EPSILONS):
+        for index, alpha in enumerate(ALPHAS):
+            average_reward = []
+            for seed in range(RUNS):
+                env = gym.make("CartPole-v1")
+                env.reset()
+                qlearning = Qlearning(
+                    env, alpha, GAMMA, epsilon, EPISODES, BINS, seed)
+                qlearning.simulate_episodes()
+                rewards = qlearning.reward
+                average_reward.append(rewards)
+
+            average_reward = np.mean(average_reward, axis=0)
+            max_reward = np.empty(1000)
+            max_reward.fill(np.max(average_reward))
+            err = sem(average_reward)
+            plt.plot(x, average_reward,
+                     label=f"alpha = {alpha}", color=colors[index])
+            plt.plot(
+                x, max_reward, color=colors[index], linestyle="dashed", label=f"y = {int(max_reward[0])}")
+            plt.fill_between(
+                x, average_reward - err, average_reward + err, color=colors[index], alpha=0.5)
+
+        plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+        plt.title(f"Training Q-learning with epsilon = {epsilon}")
+        plt.ylabel("Return")
+        plt.yscale("log")
+        plt.xlabel("Episode")
+        plt.show()
