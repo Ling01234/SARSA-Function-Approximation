@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-import tqdm
+from tqdm import trange
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -98,7 +98,7 @@ class ActorCritic(nn.Module):
             episodes_reward.append(episode_reward)
             running_reward = statistics.mean(episodes_reward)
 
-            if running_reward > self.env.spec.reward_threshold and episode > 100:
+            if running_reward > self.env.spec.reward_threshold and episode > 150:
                 print(
                     f"Solved at episode {episode}, average reward: {running_reward:.2f}")
                 break
