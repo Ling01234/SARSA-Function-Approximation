@@ -79,13 +79,17 @@ class ActorCritic(nn.Module):
             terminal = False
 
             while not terminal:
+
                 action = self.select_action(state)
-                (state, reward, terminal, _, _) = self.env.step(action)
+                (next_state, reward, terminal, _, _) = self.env.step(action)
                 self.reward.append(reward)
                 episode_reward += reward
+                state = next_state
+
+                # if episode_reward >= 500:  # agent wins
+                #     break
 
             self.backprop()
 
             if verbose and episode % 10 == 0:
-                print(f"Episode {episode}, reward {episode_reward}")
-            # self.reward.append(episode_reward)
+                print(f"Episode {episode}, reward {int(episode_reward)}")
