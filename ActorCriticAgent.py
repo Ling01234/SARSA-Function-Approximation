@@ -53,7 +53,10 @@ class ActorCritic(nn.Module):
             returns = scale(returns)
         returns = torch.tensor(returns)
 
+        # print(f"out for loop, saved action: {self.saved_actions}")
+        # print(f"out for loop, returns: {returns}")
         for (log_prob, state_value), total_reward in zip(self.saved_actions, returns):
+            # print("in for loop")
             a = total_reward - state_value.item()
             policy_loss.append(-log_prob * a)
             value_loss.append(f.smooth_l1_loss(
@@ -70,15 +73,16 @@ class ActorCritic(nn.Module):
     def simulate_episodes(self, verbose=False):
         for episode in range(1, self.num_episode + 1):
             (state, _) = self.env.reset()
-            episode_reward = 0
             terminal = False
 
             while not terminal:
                 action = self.select_action(state)
                 (next_state, reward, terminal, _, _) = self.env.step(action)
-                episode_reward += reward
+                self.reward.append(reward)
+
+            if verbose and episode % 10 == 0:
+                print(f"Episode {episode}, reward {sum(self.reward)}")
 
             self.backprop()
 
-            if not verbose and episode % 10 == 0:
-                print(f"Episode {episode}, reward {episode_reward}")
+            # self.reward.append(episode_reward)
