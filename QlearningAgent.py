@@ -23,32 +23,23 @@ class Qlearning:
         self.epsilon = epsilon
         self.num_episodes = num_episodes
         self.num_bins = num_bins
-        self.lowerbound = [-2.4, -4, -12, -10]
-        self.upperbound = [2.4, 4, 12, 10]
+        self.lowerbound = env.observation_space.low
+        self.lowerbound[1] = -3.5
+        self.lowerbound[3] = -10
+        self.upperbound = env.observation_space.high
+        self.upperbound[1] = 3.5
+        self.upperbound[3] = 10
         self.seed = seed
         random.seed(seed)
 
         self.num_action = env.action_space.n
         self.reward = []
-        # self.Qvalues = np.zeros(
-        #     (self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
         self.Qvalues = np.random.uniform(low=-0.001, high=0.001,
-                                         size=(self.num_bins, self.num_bins, self.num_bins, self.num_bins, self.num_action))
+                                         size=(num_bins, num_bins, num_bins, num_bins, self.num_action))
         self.bins = []
         for i in range(4):
             self.bins.append(np.linspace(
                 self.lowerbound[i], self.upperbound[i], self.num_bins))
-
-    # def init_start_state(self):
-    #     """
-    #     Generate starting observation to be between -0.001 and 0.001
-
-    #     Returns:
-    #         np array: starting state for a new episode with shape (4,)
-    #     """
-    #     (state, _) = self.env.reset()
-    #     state /= 50
-    #     return state
 
     def discritize_state(self, state):
         """
@@ -63,12 +54,14 @@ class Qlearning:
         new_state = []
 
         for i in range(4):
-            bin = np.maximum(np.digitize(state[i], self.bins[i]) - 1, 0)
-            new_state.append(bin)
+            index = np.maximum(np.digitize(state[i], self.bins[i]) - 1, 0)
+            new_state.append(index)
 
         return tuple(new_state)
 
     def select_action(self, state, episode):
+        random.seed(self.seed)
+
         # # print(f"in select action")
         # if episode < 100:  # randomly explore in the first 100 episodes
         #     return np.random.choice(self.num_action)
@@ -131,6 +124,7 @@ class Qlearning:
         # print(f"Qvalues: {self.Qvalues[state]}")
 
     def visualize(self, games):
+        random.seed(self.seed)
         env = gym.make("CartPole-v1", render_mode="human")
         for game in range(games):
             (state, _) = env.reset()
