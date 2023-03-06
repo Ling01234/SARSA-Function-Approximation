@@ -73,16 +73,17 @@ class ActorCritic(nn.Module):
     def simulate_episodes(self, verbose=False):
         for episode in range(1, self.num_episode + 1):
             (state, _) = self.env.reset()
+            episode_reward = 0
             terminal = False
 
             while not terminal:
                 action = self.select_action(state)
                 (next_state, reward, terminal, _, _) = self.env.step(action)
                 self.reward.append(reward)
-
-            if verbose and episode % 10 == 0:
-                print(f"Episode {episode}, reward {sum(self.reward)}")
+                episode_reward += reward
 
             self.backprop()
 
+            if verbose and episode % 10 == 0:
+                print(f"Episode {episode}, reward {episode_reward}")
             # self.reward.append(episode_reward)
