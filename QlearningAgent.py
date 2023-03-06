@@ -34,8 +34,9 @@ class Qlearning:
         self.upperbound = env.observation_space.high
         self.upperbound[1] = 3.5
         self.upperbound[3] = 10
+        self.env.seed(seed)
         self.seed = seed
-        random.seed(seed)
+        random.seed(self.seed)
         self.num_action = env.action_space.n
         self.reward = []
         self.Qvalues = np.random.uniform(low=-0.001, high=0.001,
