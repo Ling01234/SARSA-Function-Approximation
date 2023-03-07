@@ -17,6 +17,7 @@ ALPHAS = [1/4, 1/8, 1/16]
 EPSILONS = [0.05, 0.15, 0.25]
 EPISODES = 1000
 MAX_STEPS = 10000
+RUNS = 10
 if torch.cuda.is_available():
     DEVICE = "cuda"
 else:
@@ -64,7 +65,6 @@ def select_action(network, state):
 
 
 def initialize(alpha):
-    # Make environment
     env = gym.make('CartPole-v1')
 
     # Initialize network
@@ -80,44 +80,30 @@ def initialize(alpha):
 
 
 def train(env, actor, actor_opt, critic, critic_opt):
-    # track scores
     rewards = []
-
-    # track recent scores
     recent_reward = collections.deque(maxlen=100)
-
-    # run episodes
     for episode in tqdm(range(EPISODES)):
-
-        # init variables
         state, _ = env.reset()
         terminal = False
         episode_reward = 0
         I = 1
 
-        # run episode, update online
         for step in range(MAX_STEPS):
-
-            # get action and log probability
             action, lp = select_action(actor, state)
-
-            # step with action
             new_state, reward, terminal, _, _ = env.step(action)
-
-            # update episode score
             episode_reward += reward
 
-            # get state value of current state
+            # get critical value of current state
             state_tensor = torch.from_numpy(state)
             state_tensor = state_tensor.float().unsqueeze(0).to(DEVICE)
             state_val = critic(state_tensor)
 
-            # get state value of next state
+            # get critical value of next state
             new_state_tensor = torch.from_numpy(
                 new_state).float().unsqueeze(0).to(DEVICE)
             new_state_val = critic(new_state_tensor)
 
-            # if terminal state, next state val is 0
+            # if terminal state
             if terminal:
                 new_state_val = torch.tensor(
                     [0]).float().unsqueeze(0).to(DEVICE)
@@ -148,12 +134,12 @@ def train(env, actor, actor_opt, critic, critic_opt):
             state = new_state
             I *= GAMMA
 
-        # append episode episode_reward
+        # append episode_reward
         rewards.append(episode_reward)
         recent_reward.append(episode_reward)
         running_average = np.array(recent_reward).mean()
 
-        # early stopping if we meet solved episode_reward goal
+        # break if agent wins the game
         if running_average > env.spec.reward_threshold:
             print(
                 f"Solved at episode {episode} with average score {running_average}")
@@ -166,14 +152,19 @@ def plot(rewards):
     plt.plot(rewards)
     plt.ylabel('Return')
     plt.xlabel('Episodes')
+    plt.yscale("log")
     plt.title('Actor Critic')
     plt.show()
 
 
-def main():
+def test_run():
     env, actor, actor_opt, critic, critic_opt = initialize(alpha=ALPHAS[2])
     rewards = train(env, actor, actor_opt, critic, critic_opt)
     plot(rewards)
+
+
+def train_ac():
+    x = np.arange(1000)
 
 
 # main()
