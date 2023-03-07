@@ -62,20 +62,23 @@ def select_action(network, state):
     return action.item(), actions.log_prob(action)
 
 
-# Make environment
-env = gym.make('CartPole-v1')
+def initialize():
+    # Make environment
+    env = gym.make('CartPole-v1')
 
-# Init network
-actor = Actor(
-    env.observation_space.shape[0], env.action_space.n).to(DEVICE)
-critic = Critic(env.observation_space.shape[0]).to(DEVICE)
+    # Init network
+    actor = Actor(
+        env.observation_space.shape[0], env.action_space.n).to(DEVICE)
+    critic = Critic(env.observation_space.shape[0]).to(DEVICE)
 
-# Init optimizer
-actor_opt = opt.SGD(actor.parameters(), lr=0.001)
-critic_opt = opt.SGD(critic.parameters(), lr=0.001)
+    # Init optimizer
+    actor_opt = opt.SGD(actor.parameters(), lr=0.001)
+    critic_opt = opt.SGD(critic.parameters(), lr=0.001)
+
+    return env, actor, actor_opt, critic, critic_opt
 
 
-def train():
+def train(env, actor, actor_opt, critic, critic_opt):
     # track scores
     scores = []
 
@@ -167,12 +170,9 @@ def plot(rewards):
 
 
 def main():
-    # pass
-    rewards = train()
+    env, actor, actor_opt, critic, critic_opt = initialize()
+    rewards = train(env, actor, actor_opt, critic, critic_opt)
     plot(rewards)
-    # env, actor, actor_opt, critic, critic_opt = initialize()
-    # rewards = train(env, actor, actor_opt, critic, critic_opt)
-    # print(rewards)
 
 
-main()
+# main()
