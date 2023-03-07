@@ -10,7 +10,8 @@ import torch.optim as opt
 from torch.distributions import Categorical
 from sklearn.preprocessing import scale
 import collections
-
+from scipy.stats import sem
+import matplotlib.colors as mcolors
 
 GAMMA = 0.99
 ALPHAS = [1/4, 1/8, 1/16]
@@ -22,6 +23,7 @@ if torch.cuda.is_available():
     DEVICE = "cuda"
 else:
     DEVICE = "cpu"
+# DEVICE = "cpu"
 
 
 class Actor(nn.Module):
@@ -66,6 +68,7 @@ def select_action(network, state):
 
 def initialize(alpha):
     env = gym.make('CartPole-v1')
+    env.reset()
 
     # Initialize network
     actor = Actor(
@@ -82,7 +85,7 @@ def initialize(alpha):
 def train(env, actor, actor_opt, critic, critic_opt):
     rewards = []
     recent_reward = collections.deque(maxlen=100)
-    for episode in tqdm(range(EPISODES)):
+    for episode in range(EPISODES):
         state, _ = env.reset()
         terminal = False
         episode_reward = 0
@@ -110,11 +113,14 @@ def train(env, actor, actor_opt, critic, critic_opt):
 
             # calculate value function loss with MSE
             val_loss = f.mse_loss(reward + GAMMA * new_state_val, state_val)
+            print(f"value loss: {val_loss}")
             val_loss *= I
 
             # calculate policy loss
             advantage = reward + GAMMA * new_state_val.item() - state_val.item()
+            print(f"advatange: {advantage}")
             policy_loss = -lp * advantage
+            print(f"policy loss: {policy_loss}")
             policy_loss *= I
 
             # Backpropagate policy
@@ -165,4 +171,33 @@ def test_run():
 
 def train_ac():
     x = np.arange(1000)
-    pass
+    colors = [mcolors.TABLEAU_COLORS["tab:blue"],
+              mcolors.TABLEAU_COLORS["tab:green"], mcolors.TABLEAU_COLORS["tab:orange"]]
+    index = 0
+    for alpha in tqdm(ALPHAS):
+        average_reward = []
+        for seed in range(RUNS):
+            print(f"run {seed}")
+            env, actor, actor_opt, critic, critic_opt = initialize(alpha)
+            rewards = train(env, actor, actor_opt, critic, critic_opt)
+            average_reward.append(rewards)
+
+        average_reward = np.mean(average_reward, axis=0)
+        max_reward = np.empty(1000)
+        max_reward.fill(np.max(average_reward))
+        err = sem(average_reward)
+        plt.plot(x, average_reward,
+                 label=f"alpha = {alpha}", color=colors[index])
+        plt.plot(
+            x, max_reward, color=colors[index], linestyle="dashed", label=f"y = {int(max_reward[0])}")
+        plt.fill_between(
+            x, average_reward - err, average_reward + err, color=colors[index], alpha=0.5)
+
+        index += 1
+
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title(f"Training Actor Critic")
+    plt.ylabel("Return")
+    plt.yscale("log")
+    plt.xlabel("Episodes")
+    plt.show()
