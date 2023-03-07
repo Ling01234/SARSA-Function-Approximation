@@ -165,6 +165,4 @@ def test_run():
 
 def train_ac():
     x = np.arange(1000)
-
-
-# main()
+    pass
