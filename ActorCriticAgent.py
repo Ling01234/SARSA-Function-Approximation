@@ -1,104 +1,202 @@
 import numpy as np
 import gym
-from tqdm import trange
+from tqdm import trange, tqdm
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import seaborn as sns
 import torch.nn.functional as f
 import torch.optim as opt
 from torch.distributions import Categorical
 from sklearn.preprocessing import scale
-import statistics
 import collections
 
 
-class ActorCritic(nn.Module):
-    def __init__(self, env, hidden_units, gamma, alpha, num_episode):
-        super(ActorCritic, self).__init__()
-        self.env = env
-        self.gamma = gamma
-        self.alpha = alpha
-        self.num_episode = num_episode
-        self.num_action = self.env.action_space.n
-        self.hidden_units = hidden_units
-        self.layer1 = nn.Linear(4, hidden_units)
-        self.actor = nn.Linear(hidden_units, self.num_action)
-        self.critic = nn.Linear(hidden_units, 1)
-        self.saved_actions = []
-        self.reward = []
-        self.optimizer = opt.Adam(self.parameters(), lr=alpha)
+GAMMA = 0.99
+ALPHA = 1/16
+EPISODES = 1000
+MAX_STEPS = 10000
+if torch.cuda.is_available():
+    DEVICE = "cuda"
+else:
+    DEVICE = "cpu"
+
+
+class PolicyNetwork(nn.Module):
+
+    # Takes in observations and outputs actions
+    def __init__(self, observation_space, action_space):
+        super(PolicyNetwork, self).__init__()
+        self.input_layer = nn.Linear(observation_space, 128)
+        self.output_layer = nn.Linear(128, action_space)
+
+    # forward pass
+    def forward(self, x):
+        # input states
+        x = self.input_layer(x)
+
+        # relu activation
+        x = f.relu(x)
+
+        # actions
+        actions = self.output_layer(x)
+
+        # get softmax for a probability distribution
+        action_probs = f.softmax(actions, dim=1)
+
+        return action_probs
+
+
+# Using a neural network to learn state value
+class StateValueNetwork(nn.Module):
+
+    #Takes in state
+    def __init__(self, observation_space):
+        super(StateValueNetwork, self).__init__()
+
+        self.input_layer = nn.Linear(observation_space, 128)
+        self.output_layer = nn.Linear(128, 1)
 
     def forward(self, x):
-        x = f.relu(self.layer1(x))
-        probs = f.softmax(self.actor(x), dim=-1)
-        state_values = self.critic(x)
-        return probs, state_values
+        # input layer
+        x = self.input_layer(x)
 
-    def select_action(self, state):
-        state = torch.from_numpy(state).float()
-        probs, value = self(state)
-        actions = Categorical(probs)
-        action = actions.sample()  # returns tensor object
-        self.saved_actions.append((actions.log_prob(action), value))
-        return action.item()  # get item from tensor
+        # activiation relu
+        x = f.relu(x)
 
-    def backprop(self):
-        total_reward = 0
-        policy_loss, value_loss = [], []
-        returns = []
+        # get state value
+        state_value = self.output_layer(x)
 
-        for reward in self.reward[::-1]:
-            total_reward = reward + self.gamma * total_reward
-            returns.insert(0, total_reward)
+        return state_value
 
-        returns = scale(returns)
-        returns = torch.tensor(returns)
 
-        for (log_prob, state_value), total_reward in zip(self.saved_actions, returns):
-            # print("in for loop")
-            adv = total_reward - state_value.item()
-            policy_loss.append(-log_prob * adv)
-            value_loss.append(f.smooth_l1_loss(
-                state_value, torch.tensor([total_reward])))
+def select_action(network, state):
+    state = torch.from_numpy(state)
+    state = state.float().unsqueeze(0).to(DEVICE)
 
-        self.optimizer.zero_grad()
-        loss = torch.stack(policy_loss).sum() + torch.stack(value_loss).sum()
-        loss.backward()
-        self.optimizer.step()
+    # use network to predict action probabilities
+    action_probs = network(state)
+    state = state.detach()
 
-        del self.reward[:]
-        del self.saved_actions[:]
+    # sample an action using the probability distribution
+    m = Categorical(action_probs)
+    action = m.sample()
 
-    def simulate_episodes(self, verbose=False):
-        # won = False
-        running_reward = 0
-        episodes_reward = collections.deque(maxlen=100)
-        for episode in range(1, self.num_episode + 1):
-            (state, _) = self.env.reset()
-            episode_reward = 0
-            terminal = False
+    # return action
+    return action.item(), m.log_prob(action)
 
-            while not terminal:
 
-                action = self.select_action(state)
-                (next_state, reward, terminal, _, _) = self.env.step(action)
-                self.reward.append(reward)
-                episode_reward += reward
-                state = next_state
+# Make environment
+env = gym.make('CartPole-v1')
 
-                # if episode_reward >= 500:  # agent wins
-                #     won = True
-                #     break
+# Init network
+policy_network = PolicyNetwork(
+    env.observation_space.shape[0], env.action_space.n).to(DEVICE)
+stateval_network = StateValueNetwork(env.observation_space.shape[0]).to(DEVICE)
 
-            self.backprop()
+# Init optimizer
+policy_optimizer = opt.SGD(policy_network.parameters(), lr=0.001)
+stateval_optimizer = opt.SGD(stateval_network.parameters(), lr=0.001)
 
-            if verbose and episode % 10 == 0:
-                print(f"Episode {episode}, reward {int(episode_reward)}")
 
-            episodes_reward.append(episode_reward)
-            running_reward = statistics.mean(episodes_reward)
+def train():
+    # track scores
+    scores = []
 
-            if running_reward > self.env.spec.reward_threshold and episode > 150:
-                print(
-                    f"Solved at episode {episode}, average reward: {running_reward:.2f}")
+    # track recent scores
+    recent_scores = collections.deque(maxlen=100)
+
+    # run episodes
+    for episode in tqdm(range(EPISODES)):
+
+        # init variables
+        state, _ = env.reset()
+        done = False
+        score = 0
+        I = 1
+
+        # run episode, update online
+        for step in range(MAX_STEPS):
+
+            # get action and log probability
+            action, lp = select_action(policy_network, state)
+
+            # step with action
+            new_state, reward, done, _, _ = env.step(action)
+
+            # update episode score
+            score += reward
+
+            # get state value of current state
+            state_tensor = torch.from_numpy(state)
+            state_tensor = state_tensor.float().unsqueeze(0).to(DEVICE)
+            state_val = stateval_network(state_tensor)
+
+            # get state value of next state
+            new_state_tensor = torch.from_numpy(
+                new_state).float().unsqueeze(0).to(DEVICE)
+            new_state_val = stateval_network(new_state_tensor)
+
+            # if terminal state, next state val is 0
+            if done:
+                new_state_val = torch.tensor(
+                    [0]).float().unsqueeze(0).to(DEVICE)
+
+            # calculate value function loss with MSE
+            val_loss = f.mse_loss(reward + GAMMA * new_state_val, state_val)
+            val_loss *= I
+
+            # calculate policy loss
+            advantage = reward + GAMMA * new_state_val.item() - state_val.item()
+            policy_loss = -lp * advantage
+            policy_loss *= I
+
+            # Backpropagate policy
+            policy_optimizer.zero_grad()
+            policy_loss.backward(retain_graph=True)
+            policy_optimizer.step()
+
+            # Backpropagate value
+            stateval_optimizer.zero_grad()
+            val_loss.backward()
+            stateval_optimizer.step()
+
+            if done:
                 break
+
+            # move into new state, discount I
+            state = new_state
+            I *= GAMMA
+
+        # append episode score
+        scores.append(score)
+        recent_scores.append(score)
+        running_average = np.array(recent_scores).mean()
+
+        # early stopping if we meet solved score goal
+        if running_average > env.spec.reward_threshold:
+            print(
+                f"Solved at episode {episode} with average score {running_average}")
+            break
+    return scores
+
+
+def plot(rewards):
+    sns.set()
+    plt.plot(rewards)
+    plt.ylabel('Return')
+    plt.xlabel('Episodes')
+    plt.title('Actor Critic')
+    plt.show()
+
+
+def main():
+    # pass
+    rewards = train()
+    plot(rewards)
+    # env, actor, actor_opt, critic, critic_opt = initialize()
+    # rewards = train(env, actor, actor_opt, critic, critic_opt)
+    # print(rewards)
+
+
+main()
