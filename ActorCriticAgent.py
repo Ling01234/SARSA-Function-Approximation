@@ -22,51 +22,30 @@ else:
     DEVICE = "cpu"
 
 
-class PolicyNetwork(nn.Module):
+class Actor(nn.Module):
+    def __init__(self, obs_space, action_space):
+        super(Actor, self).__init__()
+        self.layer1 = nn.Linear(obs_space, 128)
+        self.output = nn.Linear(128, action_space)
 
-    # Takes in observations and outputs actions
-    def __init__(self, observation_space, action_space):
-        super(PolicyNetwork, self).__init__()
-        self.input_layer = nn.Linear(observation_space, 128)
-        self.output_layer = nn.Linear(128, action_space)
-
-    # forward pass
     def forward(self, x):
-        # input states
-        x = self.input_layer(x)
-
-        # relu activation
+        x = self.layer1(x)
         x = f.relu(x)
-
-        # actions
-        actions = self.output_layer(x)
-
-        # get softmax for a probability distribution
+        actions = self.output(x)
         action_probs = f.softmax(actions, dim=1)
-
         return action_probs
 
 
-# Using a neural network to learn state value
-class StateValueNetwork(nn.Module):
-
-    #Takes in state
-    def __init__(self, observation_space):
-        super(StateValueNetwork, self).__init__()
-
-        self.input_layer = nn.Linear(observation_space, 128)
-        self.output_layer = nn.Linear(128, 1)
+class Critic(nn.Module):
+    def __init__(self, obs_space):
+        super(Critic, self).__init__()
+        self.layer1 = nn.Linear(obs_space, 128)
+        self.output = nn.Linear(128, 1)
 
     def forward(self, x):
-        # input layer
-        x = self.input_layer(x)
-
-        # activiation relu
+        x = self.layer1(x)
         x = f.relu(x)
-
-        # get state value
-        state_value = self.output_layer(x)
-
+        state_value = self.output(x)
         return state_value
 
 
@@ -74,29 +53,26 @@ def select_action(network, state):
     state = torch.from_numpy(state)
     state = state.float().unsqueeze(0).to(DEVICE)
 
-    # use network to predict action probabilities
     action_probs = network(state)
     state = state.detach()
 
-    # sample an action using the probability distribution
-    m = Categorical(action_probs)
-    action = m.sample()
+    actions = Categorical(action_probs)
+    action = actions.sample()
 
-    # return action
-    return action.item(), m.log_prob(action)
+    return action.item(), actions.log_prob(action)
 
 
 # Make environment
 env = gym.make('CartPole-v1')
 
 # Init network
-policy_network = PolicyNetwork(
+actor = Actor(
     env.observation_space.shape[0], env.action_space.n).to(DEVICE)
-stateval_network = StateValueNetwork(env.observation_space.shape[0]).to(DEVICE)
+critic = Critic(env.observation_space.shape[0]).to(DEVICE)
 
 # Init optimizer
-policy_optimizer = opt.SGD(policy_network.parameters(), lr=0.001)
-stateval_optimizer = opt.SGD(stateval_network.parameters(), lr=0.001)
+actor_opt = opt.SGD(actor.parameters(), lr=0.001)
+critic_opt = opt.SGD(critic.parameters(), lr=0.001)
 
 
 def train():
@@ -119,7 +95,7 @@ def train():
         for step in range(MAX_STEPS):
 
             # get action and log probability
-            action, lp = select_action(policy_network, state)
+            action, lp = select_action(actor, state)
 
             # step with action
             new_state, reward, done, _, _ = env.step(action)
@@ -130,12 +106,12 @@ def train():
             # get state value of current state
             state_tensor = torch.from_numpy(state)
             state_tensor = state_tensor.float().unsqueeze(0).to(DEVICE)
-            state_val = stateval_network(state_tensor)
+            state_val = critic(state_tensor)
 
             # get state value of next state
             new_state_tensor = torch.from_numpy(
                 new_state).float().unsqueeze(0).to(DEVICE)
-            new_state_val = stateval_network(new_state_tensor)
+            new_state_val = critic(new_state_tensor)
 
             # if terminal state, next state val is 0
             if done:
@@ -152,14 +128,14 @@ def train():
             policy_loss *= I
 
             # Backpropagate policy
-            policy_optimizer.zero_grad()
+            actor.zero_grad()
             policy_loss.backward(retain_graph=True)
-            policy_optimizer.step()
+            actor_opt.step()
 
             # Backpropagate value
-            stateval_optimizer.zero_grad()
+            critic_opt.zero_grad()
             val_loss.backward()
-            stateval_optimizer.step()
+            critic_opt.step()
 
             if done:
                 break
