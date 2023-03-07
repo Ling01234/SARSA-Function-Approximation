@@ -13,7 +13,8 @@ import collections
 
 
 GAMMA = 0.99
-ALPHA = 1/16
+ALPHAS = [1/4, 1/8, 1/16]
+EPSILONS = [0.05, 0.15, 0.25]
 EPISODES = 1000
 MAX_STEPS = 10000
 if torch.cuda.is_available():
@@ -62,7 +63,7 @@ def select_action(network, state):
     return action.item(), actions.log_prob(action)
 
 
-def initialize():
+def initialize(alpha):
     # Make environment
     env = gym.make('CartPole-v1')
 
@@ -72,8 +73,8 @@ def initialize():
     critic = Critic(env.observation_space.shape[0]).to(DEVICE)
 
     # Initialize optimizer
-    actor_opt = opt.SGD(actor.parameters(), lr=0.001)
-    critic_opt = opt.SGD(critic.parameters(), lr=0.001)
+    actor_opt = opt.SGD(actor.parameters(), lr=alpha)
+    critic_opt = opt.SGD(critic.parameters(), lr=alpha)
 
     return env, actor, actor_opt, critic, critic_opt
 
@@ -170,7 +171,7 @@ def plot(rewards):
 
 
 def main():
-    env, actor, actor_opt, critic, critic_opt = initialize()
+    env, actor, actor_opt, critic, critic_opt = initialize(alpha=ALPHAS[2])
     rewards = train(env, actor, actor_opt, critic, critic_opt)
     plot(rewards)
 
