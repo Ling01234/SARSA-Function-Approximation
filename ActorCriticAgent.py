@@ -66,12 +66,12 @@ def initialize():
     # Make environment
     env = gym.make('CartPole-v1')
 
-    # Init network
+    # Initialize network
     actor = Actor(
         env.observation_space.shape[0], env.action_space.n).to(DEVICE)
     critic = Critic(env.observation_space.shape[0]).to(DEVICE)
 
-    # Init optimizer
+    # Initialize optimizer
     actor_opt = opt.SGD(actor.parameters(), lr=0.001)
     critic_opt = opt.SGD(critic.parameters(), lr=0.001)
 
@@ -80,18 +80,18 @@ def initialize():
 
 def train(env, actor, actor_opt, critic, critic_opt):
     # track scores
-    scores = []
+    rewards = []
 
     # track recent scores
-    recent_scores = collections.deque(maxlen=100)
+    recent_reward = collections.deque(maxlen=100)
 
     # run episodes
     for episode in tqdm(range(EPISODES)):
 
         # init variables
         state, _ = env.reset()
-        done = False
-        score = 0
+        terminal = False
+        episode_reward = 0
         I = 1
 
         # run episode, update online
@@ -101,10 +101,10 @@ def train(env, actor, actor_opt, critic, critic_opt):
             action, lp = select_action(actor, state)
 
             # step with action
-            new_state, reward, done, _, _ = env.step(action)
+            new_state, reward, terminal, _, _ = env.step(action)
 
             # update episode score
-            score += reward
+            episode_reward += reward
 
             # get state value of current state
             state_tensor = torch.from_numpy(state)
@@ -117,7 +117,7 @@ def train(env, actor, actor_opt, critic, critic_opt):
             new_state_val = critic(new_state_tensor)
 
             # if terminal state, next state val is 0
-            if done:
+            if terminal:
                 new_state_val = torch.tensor(
                     [0]).float().unsqueeze(0).to(DEVICE)
 
@@ -140,24 +140,24 @@ def train(env, actor, actor_opt, critic, critic_opt):
             val_loss.backward()
             critic_opt.step()
 
-            if done:
+            if terminal:
                 break
 
             # move into new state, discount I
             state = new_state
             I *= GAMMA
 
-        # append episode score
-        scores.append(score)
-        recent_scores.append(score)
-        running_average = np.array(recent_scores).mean()
+        # append episode episode_reward
+        rewards.append(episode_reward)
+        recent_reward.append(episode_reward)
+        running_average = np.array(recent_reward).mean()
 
-        # early stopping if we meet solved score goal
+        # early stopping if we meet solved episode_reward goal
         if running_average > env.spec.reward_threshold:
             print(
                 f"Solved at episode {episode} with average score {running_average}")
             break
-    return scores
+    return rewards
 
 
 def plot(rewards):
