@@ -1,7 +1,11 @@
 import numpy as np
 import gym
-from tqdm import trange, tqdm
+from tqdm import trange
 from scipy.special import softmax
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+from scipy.stats import sem
+
 
 env = gym.make("CartPole-v1")
 num_actions = env.action_space.n
@@ -11,11 +15,13 @@ lowerbounds[3] = -10
 upperbounds = env.observation_space.high
 upperbounds[1] = 3.5
 upperbounds[3] = 10
+env.close()
+
 
 GAMMA = 0.99
 ALPHAS = [1/4, 1/8, 1/16]
 EPSILONS = [0.05, 0.15, 0.25]
-EPISODES = 10000
+EPISODES = 1000
 MAX_STEPS = 10000
 RUNS = 10
 NUM_BINS = 10
@@ -61,14 +67,13 @@ class Critic():
         return value
 
 
-def train(alpha):
+def train(actor, critic):
+    env = gym.make("CartPole-v1")
     total_rewards = []
-    for episode in trange(1, EPISODES+1):
+    for episode in range(1, EPISODES+1):
         episode_reward = 0
         state, _ = env.reset()
         terminal = False
-        actor = Actor(env, alpha)
-        critic = Critic(env, alpha)
         while not terminal:
             # choose action with actor policy
             action, probs = actor.policy(state)
@@ -93,11 +98,11 @@ def train(alpha):
             state = next_state
 
         total_rewards.append(episode_reward)
-
+    env.close()
     return total_rewards, actor, critic
 
 
-def test(alpha, actor, critic):
+def visualize(actor):
     env = gym.make("CartPole-v1", render_mode="human")
     state, _ = env.reset()
     terminal = False
@@ -112,13 +117,43 @@ def test(alpha, actor, critic):
     print(f"Test reward: {r}")
 
 
-env.close()
+def train_ac():
+    best_alpha = 0
+    best_actor = None
+    env = gym.make("CartPole-v1")
+    x = np.arange(1000)
+    colors = [mcolors.TABLEAU_COLORS["tab:blue"],
+              mcolors.TABLEAU_COLORS["tab:green"], mcolors.TABLEAU_COLORS["tab:orange"]]
 
+    for index, alpha in enumerate(ALPHAS):
+        average_reward = []
+        for seed in trange(RUNS):
+            env.reset()
+            actor = Actor(env, alpha)
+            critic = Critic(env, alpha)
+            rewards, actor, critic = train(actor, critic)
+            average_reward.append(rewards)
 
-def main():
-    rewards, actor, critic = train(1/16)
-    # print(f"train reward: {rewards}")
-    test(1/16, actor, critic)
+        average_reward = np.mean(average_reward, axis=0)
+        max_reward = np.empty(1000)
+        max_reward.fill(np.max(average_reward))
+        err = sem(average_reward)
+        plt.plot(x, average_reward,
+                 label=f"alpha = {alpha}", color=colors[index])
+        plt.plot(x, max_reward, color=colors[index],
+                 linestyle="dashed", label=f"y = {int(max_reward[0])}")
+        plt.fill_between(x, average_reward - err,
+                         average_reward + err, color=colors[index], alpha=0.5)
 
+        if best_alpha < max_reward[0]:
+            best_alpha = alpha
+            best_actor = actor
 
-main()
+    plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
+    plt.title(f"Training Actor Critic")
+    plt.yscale("log")
+    plt.ylabel("Return")
+    plt.xlabel("Episode")
+    plt.show()
+
+    return best_alpha, actor
