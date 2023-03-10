@@ -198,7 +198,7 @@ def train_qlearning():
                 x, average_reward - err, average_reward + err, color=colors[index], alpha=0.5)
 
         plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
-        plt.title(f"Training Q-learning with epsilon = {epsilon}")
+        plt.title(f"Training Q-learning with epsilon = {epsilon:.2f}")
         plt.ylabel("Return")
         plt.yscale("log")
         plt.xlabel("Episode")
