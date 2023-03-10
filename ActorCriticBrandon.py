@@ -49,12 +49,21 @@ class Agent:
         self.policy = np.zeros(shape=(num_bins, num_bins, num_bins, num_bins, self.num_action), dtype = int) 
 
         # Weights (need to fix the size)
-        self.weights = np.random.uniform(low=-.001, high=0.001, size=(5))  
+        self.w = np.random.uniform(low=-0.001, high=0.001,size=(10 * 4)) 
         
         self.bins = []
         for i in range(4):
             self.bins.append(np.linspace(
                 self.lowerbound[i], self.upperbound[i], self.num_bins))
+
+    def feature(self,state):
+        state = list(state)
+        one_hot = np.zeros(10 * 4)
+        for i in range(4):
+            index = np.maximum(np.digitize(state[i], self.bins[i]) - 1, 0)
+            one_hot[10 * i + index] = 1  # one hot encoding
+
+        return one_hot
 
     def discritize_state(self, state):
         """
@@ -75,7 +84,7 @@ class Agent:
     
     def run_one_episode(self, env, policy, render=False):
 
-        state = env.reset()
+        (state,_) = env.reset()
         total_reward = 0
         d_states = []
         actions = []
@@ -87,22 +96,26 @@ class Agent:
         while not done:
             if render:
                 env.render()
-            
-            d_state = self.discritize_state(state)    # discretize the state
+            d_state = self.feature(state)    # discretize the state
             d_states.append(d_state)                        # Check surroundings
-            action, prob = policy.action(state)         # Choose action based on surroundings
+            action, prob = policy.action(self.feature(state))         # Choose action based on surroundings
             actions.append(action)
             probs.append(prob)
 
-            state, reward, done, info = env.step(action)  # Execute action
+            state, reward, done, _, _ = env.step(action)  # Execute action
             total_reward += reward
             rewards.append(reward)
 
             # Calculate delta
-            delta = reward + self.gamma * self.V[d_state + (action,)] - self.V[d_states[t] + (action,)]
+            #delta = reward + self.gamma * self.V[d_state + (action,)] - self.V[d_states[t] + (action,)]
+            
+            delta = reward + self.gamma * ((d_state)@self.w) - ((d_states[t])@self.w)
+
 
             # Update Value function
-            self.V[d_state] += self.alpha * delta
+            #self.V[d_state] += self.alpha * delta * (self.V[self.discritize_state(state)] - self.V[d_state])
+            self.w += self.alpha * delta * np.array((d_states[t]))
+            #print(f"TEST: {self.w}")
 
             # Update policy
             policy.update(d_states[t], actions[t], delta)
@@ -122,18 +135,34 @@ class Agent:
         for i in range(MAX_EPISODES):
                         
             # Run one episode
-            total_reward, rewards, observations, actions, probs = self.run_one_episode(env, Policy)
+            total_reward, rewards, observations, actions, probs = self.run_one_episode(env, policy)
 
             # Keep track of the total reward for the episode
             episode_rewards.append(total_reward)
 
-            print("EP: " + str(i) + "Score: " + str(total_reward) + " ")
+            print("EP: " + str(i) + " Score: " + str(total_reward) + " ")
 
         return episode_rewards, policy
 
 
-class LogisticPolicy:
+class Critic:
+    def __init__(self, alpha, gamma):
+        self.alpha = alpha
+        self.gamma = gamma
+        self.w = np.zeros(4)
     
+    def value_fn(self, x):
+        return x @ self.w
+    
+    def logistic(self, y):
+        return 1/(1+np.exp(-y))
+    
+    def update(self,x , delta):
+        self.w += self.alpha * delta * x
+    
+
+
+class LogisticPolicy:
     def __init__(self, theta, beta, gamma):
         self.theta = theta
         self.beta = beta
@@ -144,6 +173,7 @@ class LogisticPolicy:
     
     def probs(self, x):
         y = x @ self.theta
+
         prob_left = self.logistic(y)
 
         return np.array([prob_left, 1-prob_left])
@@ -156,8 +186,8 @@ class LogisticPolicy:
     
     def grad_log_p(self, x):
         y = x @ self.theta
-        grad_log_pleft = x - x*self.logistic(y)
-        grad_log_pright = - x*self.logistic(y)
+        grad_log_pleft = np.array(x) - np.array(x)*self.logistic(y)
+        grad_log_pright = - np.array(x)*self.logistic(y)
 
         return grad_log_pleft, grad_log_pright
     
@@ -175,11 +205,13 @@ GLOBAL_SEED = 0
 np.random.seed(GLOBAL_SEED)
 env = gym.make("CartPole-v1")
 
-AC_agent = Agent(env, 0.1,0.1,0.99, EPISODES, 10, GLOBAL_SEED)
+AC_agent = Agent(env, 0.25,0.25,0.95, EPISODES, 10, GLOBAL_SEED)
 
-episode_rewards, policy = AC_agent.train(np.random.rand(4), LogisticPolicy,seed=GLOBAL_SEED)
+episode_rewards, policy = AC_agent.train(np.random.rand(40), LogisticPolicy,seed=GLOBAL_SEED)
 
 
 
+plt.plot(episode_rewards)
+plt.show()
 
 
