@@ -34,7 +34,7 @@ class Qlearning:
         self.upperbound = env.observation_space.high
         self.upperbound[1] = 3.5
         self.upperbound[3] = 10
-        self.env.seed(seed)
+        #self.env.seed(seed)
         self.seed = seed
         random.seed(self.seed)
         self.num_action = env.action_space.n
@@ -171,6 +171,8 @@ class Qlearning:
 
 
 def train_qlearning():
+    best_average_reward = []
+
     x = np.arange(1000)
     colors = [mcolors.TABLEAU_COLORS["tab:blue"],
               mcolors.TABLEAU_COLORS["tab:green"], mcolors.TABLEAU_COLORS["tab:orange"]]
@@ -196,6 +198,11 @@ def train_qlearning():
                 x, max_reward, color=colors[index], linestyle="dashed", label=f"y = {int(max_reward[0])}")
             plt.fill_between(
                 x, average_reward - err, average_reward + err, color=colors[index], alpha=0.5)
+            
+            if alpha == 0.25 and epsilon == 0.25:
+                best_average_reward = average_reward
+        
+        
 
         plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
         plt.title(f"Training Q-learning with epsilon = {epsilon:.2f}")
@@ -203,3 +210,5 @@ def train_qlearning():
         plt.yscale("log")
         plt.xlabel("Episode")
         plt.show()
+
+    return best_average_reward

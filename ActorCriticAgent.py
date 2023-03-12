@@ -188,6 +188,7 @@ def train_ac():
     """
     best_alpha = 0
     best_actor = None
+    best_average_reward = []
     env = gym.make("CartPole-v1")
     x = np.arange(1000)
     colors = [mcolors.TABLEAU_COLORS["tab:blue"],
@@ -224,6 +225,9 @@ def train_ac():
             best_alpha = alpha
             best_actor = actor
 
+        if alpha == 0.0625:
+            best_average_reward = average_reward
+
     plt.legend(bbox_to_anchor=(1, 0.5), loc="best")
     plt.title(f"Training Actor Critic")
     plt.yscale("log")
@@ -231,4 +235,4 @@ def train_ac():
     plt.xlabel("Episode")
     plt.show()
 
-    return best_alpha, best_actor
+    return best_alpha, best_actor, average_reward
