@@ -16,6 +16,6 @@ In tabular RL, we implemented and compared the performance of SARSA and expected
 We implemented and compared the performance of Q-learning and actor-critic with linear function approximation on the [cart-pole](https://gymnasium.farama.org/environments/classic_control/cart_pole/) domain from the Gym environment. We analyzed the effect of $\epsilon$ and $\alpha$ on the performance of each model, and compared them against each other witht he best hyperparameter setting.
 
 ## Running the code
-To run the code and see the results, simply run the whole Python notebook.
+To run the code and see the results, simply run the [Python notebook](Sarsa_Qlearning_AC.ipynb).
 
 
